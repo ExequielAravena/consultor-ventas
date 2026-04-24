@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consultor Offline Ventas</title>
+
+<style>
+body { font-family: Arial, sans-serif; padding: 15px; background:#f5f6f8; margin:0; }
+h2 { margin: 0 0 16px 0; font-size:24px; }
+.card { background:white; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+label { font-weight:bold; display:block; margin-top:8px; }
+input,button { width:100%; padding:10px; margin-top:8px; box-sizing:border-box; font-size:16px; border-radius:6px; border:1px solid #ccc; }
+button { background:#0d6efd; color:white; border:none; font-weight:bold; }
+button.secundario { background:#6c757d; }
+.botones { display:flex; gap:8px; }
+.botones button { flex:1; }
+.status { margin:10px 0; color:green; font-weight:bold; line-height:1.35; }
+.info { color:#555; font-size:13px; margin-top:6px; line-height:1.35; }
+.total-box { background:#fff; border-radius:10px; padding:12px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.total-label { font-size:13px; color:#666; }
+.total-valor { font-size:22px; font-weight:bold; color:#0d6efd; margin-top:4px; }
+.wrap { overflow-x:auto; }
+table { width:100%; border-collapse: collapse; margin-top:10px; background:white; }
+td,th { border:1px solid #ccc; padding:6px; white-space:nowrap; }
+th { background:#f2f2f2; }
+th.total-header { background:#dbeafe; color:#084298; }
+
+.result-card {
+    background:white;
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+.rc-head {
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    font-size:13px;
+    color:#555;
+    margin-bottom:5px;
+}
+.rc-cliente {
+    font-weight:bold;
+    font-size:16px;
+    color:#111;
+    margin-bottom:4px;
+}
+.rc-producto {
+    font-size:14px;
+    color:#333;
+    margin-bottom:7px;
+}
+.rc-valores {
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap:8px;
+    font-size:14px;
+}
+.rc-box {
+    background:#f8f9fa;
+    border-radius:7px;
+    padding:6px;
+    text-align:center;
+}
+.rc-box.total {
+    background:#dbeafe;
+}
+.rc-label {
+    font-size:11px;
+    color:#666;
+}
+.rc-num {
+    font-weight:bold;
+    margin-top:2px;
+}
+.rc-vendedor {
+    margin-top:7px;
+    font-size:12px;
+    color:#666;
+}
+
+.tabla-pc { display:none; }
+
+@media (min-width:850px) {
+    .lista-mobile { display:none; }
+    .tabla-pc { display:block; }
+}
+</style>
+</head>
+
+<body>
+
+<h2>Consultor Offline Ventas</h2>
+
+<div class="card">
+    <label>Archivo de ventas</label>
+    <input type="file" id="fileInput" accept=".json">
+    <button class="secundario" onclick="borrarBase()">Borrar base local</button>
+    <div id="estado" class="status">Seleccione archivo JSON.</div>
+    <div id="metaBase" class="info"></div>
+</div>
+
+<div class="card">
+    <label>Fecha desde</label>
+    <input type="date" id="fechaDesde">
+
+    <label>Fecha hasta</label>
+    <input type="date" id="fechaHasta">
+
+    <label>Cliente</label>
+    <input type="text" id="cliente" placeholder="Opcional: acero, hospital, frutera">
+
+    <label>Producto</label>
+    <input type="text" id="producto" placeholder="Opcional: ablandador, cloro, alcohol">
+
+    <label>Folio</label>
+    <input type="text" id="folio" placeholder="Opcional">
+
+    <div class="botones">
+        <button onclick="buscar()">Buscar</button>
+        <button class="secundario" onclick="limpiar()">Limpiar</button>
+    </div>
+</div>
+
+<div class="total-box">
+    <div class="total-label">Total venta del despliegue</div>
+    <div id="totalVenta" class="total-valor">$0</div>
+    <div id="totalInfo" class="info">Sin resultados.</div>
+</div>
+
+<div id="listaMobile" class="lista-mobile"></div>
+
+<div class="wrap tabla-pc">
+<table>
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Folio</th>
+<th>Cliente</th>
+<th>Producto</th>
+<th>Cantidad</th>
+<th>Precio</th>
+<th class="total-header">Total</th>
+<th>Vendedor</th>
+</tr>
+</thead>
+<tbody id="tabla"></tbody>
+</table>
+</div>
+
+<script>
+let data = [];
+let meta = null;
+
+const STORAGE_DATA = "ventas_base_v3";
+const STORAGE_META = "ventas_meta_v3";
+
+window.onload = function() {
+    const baseGuardada = localStorage.getItem(STORAGE_DATA);
+    const metaGuardada = localStorage.getItem(STORAGE_META);
+
+    if (baseGuardada) {
+        try {
+            data = JSON.parse(baseGuardada);
+            meta = metaGuardada ? JSON.parse(metaGuardada) : null;
+
+            aplicarRangoMeta();
+            mostrarMeta();
+            document.getElementById("estado").textContent =
+                `Base local cargada (${formatoNumero(data.length)} registros).`;
+
+            buscar();
+        } catch {
+            document.getElementById("estado").textContent = "Error leyendo base local guardada.";
+        }
+    } else {
+        document.getElementById("estado").textContent = "No hay base local. Cargue archivo JSON.";
+        render([]);
+    }
+};
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        try {
+            const json = JSON.parse(e.target.result);
+
+            data = json.Registros || json.registros || [];
+
+            meta = {
+                archivo: file.name,
+                vendedor: json.Vendedor || json.vendedor || '',
+                desde: json.Desde || json.desde || '',
+                hasta: json.Hasta || json.hasta || '',
+                fechaSincronizacion: json.FechaSincronizacion || json.fechaSincronizacion || '',
+                fechaCargaLocal: new Date().toLocaleString('es-CL'),
+                registros: data.length
+            };
+
+            localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
+            localStorage.setItem(STORAGE_META, JSON.stringify(meta));
+
+            aplicarRangoMeta();
+            document.getElementById('estado').textContent =
+                `Base actualizada y guardada localmente (${formatoNumero(data.length)} registros).`;
+
+            mostrarMeta();
+            buscar();
+        } catch {
+            document.getElementById('estado').textContent = 'Error leyendo archivo JSON.';
+        }
+    };
+
+    reader.readAsText(file);
+});
+
+function aplicarRangoMeta() {
+    if (!meta) return;
+
+    if (meta.desde) document.getElementById('fechaDesde').value = meta.desde;
+    if (meta.hasta) document.getElementById('fechaHasta').value = meta.hasta;
+}
+
+function mostrarMeta() {
+    const div = document.getElementById("metaBase");
+
+    if (!meta) {
+        div.textContent = "";
+        return;
+    }
+
+    div.innerHTML =
+        `<b>Base activa:</b> ${meta.archivo || 'Base guardada'}<br>` +
+        `<b>Vendedor:</b> ${meta.vendedor || ''} | ` +
+        `<b>Rango base:</b> ${meta.desde || ''} al ${meta.hasta || ''}<br>` +
+        `<b>Última carga local:</b> ${meta.fechaCargaLocal || ''}`;
+}
+
+function normalizar(txt) {
+    return (txt || '')
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+function cumpleBusqueda(valor, textoBusqueda) {
+    const palabras = normalizar(textoBusqueda)
+        .split(/\s+/)
+        .filter(Boolean);
+
+    const valorNormalizado = normalizar(valor);
+
+    return palabras.length === 0 || palabras.every(p => valorNormalizado.includes(p));
+}
+
+function cumpleFecha(fecha, desde, hasta) {
+    const f = (fecha || '').toString().substring(0, 10);
+
+    const okDesde = !desde || f >= desde;
+    const okHasta = !hasta || f <= hasta;
+
+    return okDesde && okHasta;
+}
+
+function buscar() {
+    const desde = document.getElementById('fechaDesde').value;
+    const hasta = document.getElementById('fechaHasta').value;
+    const cliente = document.getElementById('cliente').value;
+    const producto = document.getElementById('producto').value;
+    const folio = document.getElementById('folio').value;
+
+    const filtrado = data.filter(x => {
+        return cumpleFecha(x.Fecha, desde, hasta)
+            && cumpleBusqueda(x.CardName, cliente)
+            && cumpleBusqueda(x.ItemName, producto)
+            && cumpleBusqueda(x.Folio, folio);
+    });
+
+    render(filtrado.slice(0, 300), filtrado.length, calcularTotal(filtrado));
+
+    document.getElementById('estado').textContent =
+        `Resultados encontrados: ${formatoNumero(filtrado.length)}. Mostrando máximo 300.`;
+}
+
+function limpiar() {
+    document.getElementById('cliente').value = '';
+    document.getElementById('producto').value = '';
+    document.getElementById('folio').value = '';
+
+    // Mantiene el rango de fechas, porque corresponde a la base o al rango elegido por el vendedor.
+    buscar();
+}
+
+function borrarBase() {
+    if (!confirm("¿Desea borrar la base local guardada?")) return;
+
+    localStorage.removeItem(STORAGE_DATA);
+    localStorage.removeItem(STORAGE_META);
+
+    data = [];
+    meta = null;
+
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fechaDesde').value = '';
+    document.getElementById('fechaHasta').value = '';
+    document.getElementById('cliente').value = '';
+    document.getElementById('producto').value = '';
+    document.getElementById('folio').value = '';
+    document.getElementById('estado').textContent = 'Base local eliminada.';
+    document.getElementById('metaBase').textContent = '';
+    render([]);
+}
+
+function calcularTotal(lista) {
+    return lista.reduce((acc, x) => {
+        const n = Number(x.TotalLinea || 0);
+        return acc + (isNaN(n) ? 0 : n);
+    }, 0);
+}
+
+function render(lista, totalEncontrados = 0, totalVenta = 0) {
+    renderTarjetas(lista);
+    renderTabla(lista);
+
+    document.getElementById('totalVenta').textContent = '$' + formatoNumero(totalVenta);
+    document.getElementById('totalInfo').textContent =
+        totalEncontrados > 0
+            ? `Registros encontrados: ${formatoNumero(totalEncontrados)}. Mostrando: ${formatoNumero(lista.length)}.`
+            : 'Sin resultados.';
+}
+
+function renderTarjetas(lista) {
+    const cont = document.getElementById('listaMobile');
+    cont.innerHTML = '';
+
+    if (!lista || lista.length === 0) {
+        cont.innerHTML = '<div class="result-card">Sin resultados.</div>';
+        return;
+    }
+
+    lista.forEach(x => {
+        cont.innerHTML += `
+        <div class="result-card">
+            <div class="rc-head">
+                <span>${x.Fecha ?? ''}</span>
+                <span><b>Folio:</b> ${x.Folio ?? ''}</span>
+            </div>
+            <div class="rc-cliente">${x.CardName ?? ''}</div>
+            <div class="rc-producto">${x.ItemName ?? ''}</div>
+
+            <div class="rc-valores">
+                <div class="rc-box">
+                    <div class="rc-label">Cant.</div>
+                    <div class="rc-num">${formatoNumero(x.Cantidad)}</div>
+                </div>
+                <div class="rc-box">
+                    <div class="rc-label">Precio</div>
+                    <div class="rc-num">${formatoNumero(x.Precio)}</div>
+                </div>
+                <div class="rc-box total">
+                    <div class="rc-label">Total</div>
+                    <div class="rc-num">${formatoNumero(x.TotalLinea)}</div>
+                </div>
+            </div>
+
+            <div class="rc-vendedor">${x.Vendedor ?? ''}</div>
+        </div>`;
+    });
+}
+
+function renderTabla(lista) {
+    const tabla = document.getElementById('tabla');
+    tabla.innerHTML = '';
+
+    if (!lista || lista.length === 0) {
+        tabla.innerHTML = '<tr><td colspan="8">Sin resultados.</td></tr>';
+        return;
+    }
+
+    lista.forEach(x => {
+        tabla.innerHTML += `
+        <tr>
+            <td>${x.Fecha ?? ''}</td>
+            <td>${x.Folio ?? ''}</td>
+            <td>${x.CardName ?? ''}</td>
+            <td>${x.ItemName ?? ''}</td>
+            <td>${formatoNumero(x.Cantidad)}</td>
+            <td>${formatoNumero(x.Precio)}</td>
+            <td>${formatoNumero(x.TotalLinea)}</td>
+            <td>${x.Vendedor ?? ''}</td>
+        </tr>`;
+    });
+}
+
+function formatoNumero(valor) {
+    const n = Number(valor);
+    if (isNaN(n)) return valor ?? '';
+    return n.toLocaleString('es-CL');
+}
+</script>
+
+</body>
+</html>
