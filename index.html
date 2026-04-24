@@ -20,72 +20,21 @@ button.secundario { background:#6c757d; }
 .total-box { background:#fff; border-radius:10px; padding:12px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
 .total-label { font-size:13px; color:#666; }
 .total-valor { font-size:22px; font-weight:bold; color:#0d6efd; margin-top:4px; }
-.wrap { overflow-x:auto; }
-table { width:100%; border-collapse: collapse; margin-top:10px; background:white; }
+.wrap { overflow-x:auto; background:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+table { width:100%; border-collapse: collapse; margin-top:0; background:white; font-size:14px; min-width:1050px; }
 td,th { border:1px solid #ccc; padding:6px; white-space:nowrap; }
-th { background:#f2f2f2; }
+th { background:#f2f2f2; position:sticky; top:0; z-index:1; }
 th.total-header { background:#dbeafe; color:#084298; }
-
-.result-card {
-    background:white;
-    border-radius:10px;
-    padding:12px;
-    margin-bottom:10px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.06);
-}
-.rc-head {
-    display:flex;
-    justify-content:space-between;
-    gap:8px;
-    font-size:13px;
-    color:#555;
-    margin-bottom:5px;
-}
-.rc-cliente {
-    font-weight:bold;
-    font-size:16px;
-    color:#111;
-    margin-bottom:4px;
-}
-.rc-producto {
-    font-size:14px;
-    color:#333;
-    margin-bottom:7px;
-}
-.rc-valores {
-    display:grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap:8px;
-    font-size:14px;
-}
-.rc-box {
-    background:#f8f9fa;
-    border-radius:7px;
-    padding:6px;
-    text-align:center;
-}
-.rc-box.total {
-    background:#dbeafe;
-}
-.rc-label {
-    font-size:11px;
-    color:#666;
-}
-.rc-num {
-    font-weight:bold;
-    margin-top:2px;
-}
-.rc-vendedor {
-    margin-top:7px;
-    font-size:12px;
-    color:#666;
-}
-
-.tabla-pc { display:none; }
-
-@media (min-width:850px) {
-    .lista-mobile { display:none; }
-    .tabla-pc { display:block; }
+td.num { text-align:right; }
+td.total { background:#eef5ff; font-weight:bold; }
+@media (max-width:849px) {
+    body { padding: 10px; }
+    h2 { font-size:22px; }
+    .card { padding:12px; margin-bottom:12px; }
+    input,button { font-size:15px; padding:9px; }
+    table { font-size:13px; min-width:980px; }
+    td,th { padding:5px; }
+    .total-valor { font-size:24px; }
 }
 </style>
 </head>
@@ -130,9 +79,7 @@ th.total-header { background:#dbeafe; color:#084298; }
     <div id="totalInfo" class="info">Sin resultados.</div>
 </div>
 
-<div id="listaMobile" class="lista-mobile"></div>
-
-<div class="wrap tabla-pc">
+<div class="wrap">
 <table>
 <thead>
 <tr>
@@ -154,8 +101,8 @@ th.total-header { background:#dbeafe; color:#084298; }
 let data = [];
 let meta = null;
 
-const STORAGE_DATA = "ventas_base_v3";
-const STORAGE_META = "ventas_meta_v3";
+const STORAGE_DATA = "ventas_base_v4";
+const STORAGE_META = "ventas_meta_v4";
 
 window.onload = function() {
     const baseGuardada = localStorage.getItem(STORAGE_DATA);
@@ -222,14 +169,12 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
 
 function aplicarRangoMeta() {
     if (!meta) return;
-
     if (meta.desde) document.getElementById('fechaDesde').value = meta.desde;
     if (meta.hasta) document.getElementById('fechaHasta').value = meta.hasta;
 }
 
 function mostrarMeta() {
     const div = document.getElementById("metaBase");
-
     if (!meta) {
         div.textContent = "";
         return;
@@ -256,16 +201,13 @@ function cumpleBusqueda(valor, textoBusqueda) {
         .filter(Boolean);
 
     const valorNormalizado = normalizar(valor);
-
     return palabras.length === 0 || palabras.every(p => valorNormalizado.includes(p));
 }
 
 function cumpleFecha(fecha, desde, hasta) {
     const f = (fecha || '').toString().substring(0, 10);
-
     const okDesde = !desde || f >= desde;
     const okHasta = !hasta || f <= hasta;
-
     return okDesde && okHasta;
 }
 
@@ -293,8 +235,6 @@ function limpiar() {
     document.getElementById('cliente').value = '';
     document.getElementById('producto').value = '';
     document.getElementById('folio').value = '';
-
-    // Mantiene el rango de fechas, porque corresponde a la base o al rango elegido por el vendedor.
     buscar();
 }
 
@@ -326,53 +266,12 @@ function calcularTotal(lista) {
 }
 
 function render(lista, totalEncontrados = 0, totalVenta = 0) {
-    renderTarjetas(lista);
     renderTabla(lista);
-
     document.getElementById('totalVenta').textContent = '$' + formatoNumero(totalVenta);
     document.getElementById('totalInfo').textContent =
         totalEncontrados > 0
             ? `Registros encontrados: ${formatoNumero(totalEncontrados)}. Mostrando: ${formatoNumero(lista.length)}.`
             : 'Sin resultados.';
-}
-
-function renderTarjetas(lista) {
-    const cont = document.getElementById('listaMobile');
-    cont.innerHTML = '';
-
-    if (!lista || lista.length === 0) {
-        cont.innerHTML = '<div class="result-card">Sin resultados.</div>';
-        return;
-    }
-
-    lista.forEach(x => {
-        cont.innerHTML += `
-        <div class="result-card">
-            <div class="rc-head">
-                <span>${x.Fecha ?? ''}</span>
-                <span><b>Folio:</b> ${x.Folio ?? ''}</span>
-            </div>
-            <div class="rc-cliente">${x.CardName ?? ''}</div>
-            <div class="rc-producto">${x.ItemName ?? ''}</div>
-
-            <div class="rc-valores">
-                <div class="rc-box">
-                    <div class="rc-label">Cant.</div>
-                    <div class="rc-num">${formatoNumero(x.Cantidad)}</div>
-                </div>
-                <div class="rc-box">
-                    <div class="rc-label">Precio</div>
-                    <div class="rc-num">${formatoNumero(x.Precio)}</div>
-                </div>
-                <div class="rc-box total">
-                    <div class="rc-label">Total</div>
-                    <div class="rc-num">${formatoNumero(x.TotalLinea)}</div>
-                </div>
-            </div>
-
-            <div class="rc-vendedor">${x.Vendedor ?? ''}</div>
-        </div>`;
-    });
 }
 
 function renderTabla(lista) {
@@ -391,9 +290,9 @@ function renderTabla(lista) {
             <td>${x.Folio ?? ''}</td>
             <td>${x.CardName ?? ''}</td>
             <td>${x.ItemName ?? ''}</td>
-            <td>${formatoNumero(x.Cantidad)}</td>
-            <td>${formatoNumero(x.Precio)}</td>
-            <td>${formatoNumero(x.TotalLinea)}</td>
+            <td class="num">${formatoNumero(x.Cantidad)}</td>
+            <td class="num">${formatoNumero(x.Precio)}</td>
+            <td class="num total">${formatoNumero(x.TotalLinea)}</td>
             <td>${x.Vendedor ?? ''}</td>
         </tr>`;
     });
