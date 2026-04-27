@@ -27,21 +27,12 @@ button.secundario { background:#6c757d; }
 .total-label { font-size:13px; color:#666; }
 .total-valor { font-size:22px; font-weight:bold; color:#0d6efd; margin-top:4px; }
 .wrap { overflow-x:auto; background:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-table { width:100%; border-collapse: collapse; margin-top:0; background:white; font-size:14px; min-width:1050px; }
+table { width:100%; border-collapse: collapse; background:white; font-size:14px; min-width:1100px; }
 td,th { border:1px solid #ccc; padding:6px; white-space:nowrap; }
 th { background:#f2f2f2; position:sticky; top:0; z-index:1; }
 th.total-header { background:#dbeafe; color:#084298; }
 td.num { text-align:right; }
 td.total { background:#eef5ff; font-weight:bold; }
-@media (max-width:849px) {
-    body { padding: 10px; }
-    h2 { font-size:22px; }
-    .card { padding:12px; margin-bottom:12px; }
-    input,button { font-size:15px; padding:9px; }
-    table { font-size:13px; min-width:980px; }
-    td,th { padding:5px; }
-    .total-valor { font-size:24px; }
-}
 </style>
 </head>
 
@@ -65,13 +56,13 @@ td.total { background:#eef5ff; font-weight:bold; }
     <input type="date" id="fechaHasta">
 
     <label>Cliente</label>
-    <input type="text" id="cliente" placeholder="Opcional: acero, hospital, frutera">
+    <input type="text" id="cliente">
 
     <label>Producto</label>
-    <input type="text" id="producto" placeholder="Opcional: ablandador, cloro, alcohol">
+    <input type="text" id="producto">
 
     <label>Folio</label>
-    <input type="text" id="folio" placeholder="Opcional">
+    <input type="text" id="folio">
 
     <div class="botones">
         <button onclick="buscar()">Buscar</button>
@@ -97,6 +88,7 @@ td.total { background:#eef5ff; font-weight:bold; }
 <th>Precio</th>
 <th class="total-header">Total</th>
 <th>Vendedor</th>
+<th>PDF</th>
 </tr>
 </thead>
 <tbody id="tabla"></tbody>
@@ -105,218 +97,73 @@ td.total { background:#eef5ff; font-weight:bold; }
 
 <script>
 let data = [];
-let meta = null;
-
-const STORAGE_DATA = "ventas_base_v4";
-const STORAGE_META = "ventas_meta_v4";
-
-window.onload = function() {
-    const baseGuardada = localStorage.getItem(STORAGE_DATA);
-    const metaGuardada = localStorage.getItem(STORAGE_META);
-
-    if (baseGuardada) {
-        try {
-            data = JSON.parse(baseGuardada);
-            meta = metaGuardada ? JSON.parse(metaGuardada) : null;
-
-            aplicarRangoMeta();
-            mostrarMeta();
-            document.getElementById("estado").textContent =
-                `Base local cargada (${formatoNumero(data.length)} registros).`;
-
-            buscar();
-        } catch {
-            document.getElementById("estado").textContent = "Error leyendo base local guardada.";
-        }
-    } else {
-        document.getElementById("estado").textContent = "No hay base local. Cargue archivo JSON.";
-        render([]);
-    }
-};
 
 document.getElementById('fileInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
-    if (!file) return;
-
     const reader = new FileReader();
 
     reader.onload = function(e) {
-        try {
-            const json = JSON.parse(e.target.result);
-
-            data = json.Registros || json.registros || [];
-
-            meta = {
-                archivo: file.name,
-                vendedor: json.Vendedor || json.vendedor || '',
-                desde: json.Desde || json.desde || '',
-                hasta: json.Hasta || json.hasta || '',
-                fechaSincronizacion: json.FechaSincronizacion || json.fechaSincronizacion || '',
-                fechaCargaLocal: new Date().toLocaleString('es-CL'),
-                registros: data.length
-            };
-
-            localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
-            localStorage.setItem(STORAGE_META, JSON.stringify(meta));
-
-            aplicarRangoMeta();
-            document.getElementById('estado').textContent =
-                `Base actualizada y guardada localmente (${formatoNumero(data.length)} registros).`;
-
-            mostrarMeta();
-            buscar();
-        } catch {
-            document.getElementById('estado').textContent = 'Error leyendo archivo JSON.';
-        }
+        const json = JSON.parse(e.target.result);
+        data = json.Registros || [];
+        buscar();
     };
 
     reader.readAsText(file);
 });
 
-function aplicarRangoMeta() {
-    if (!meta) return;
-    if (meta.desde) document.getElementById('fechaDesde').value = meta.desde;
-    if (meta.hasta) document.getElementById('fechaHasta').value = meta.hasta;
-}
-
-function mostrarMeta() {
-    const div = document.getElementById("metaBase");
-    if (!meta) {
-        div.textContent = "";
-        return;
-    }
-
-    div.innerHTML =
-        `<b>Base activa:</b> ${meta.archivo || 'Base guardada'}<br>` +
-        `<b>Vendedor:</b> ${meta.vendedor || ''} | ` +
-        `<b>Rango base:</b> ${meta.desde || ''} al ${meta.hasta || ''}<br>` +
-        `<b>Última carga local:</b> ${meta.fechaCargaLocal || ''}`;
-}
-
-function normalizar(txt) {
-    return (txt || '')
-        .toString()
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-}
-
-function cumpleBusqueda(valor, textoBusqueda) {
-    const palabras = normalizar(textoBusqueda)
-        .split(/\s+/)
-        .filter(Boolean);
-
-    const valorNormalizado = normalizar(valor);
-    return palabras.length === 0 || palabras.every(p => valorNormalizado.includes(p));
-}
-
-function cumpleFecha(fecha, desde, hasta) {
-    const f = (fecha || '').toString().substring(0, 10);
-    const okDesde = !desde || f >= desde;
-    const okHasta = !hasta || f <= hasta;
-    return okDesde && okHasta;
-}
-
 function buscar() {
-    const desde = document.getElementById('fechaDesde').value;
-    const hasta = document.getElementById('fechaHasta').value;
-    const cliente = document.getElementById('cliente').value;
-    const producto = document.getElementById('producto').value;
+    const cliente = document.getElementById('cliente').value.toLowerCase();
+    const producto = document.getElementById('producto').value.toLowerCase();
     const folio = document.getElementById('folio').value;
 
-    const filtrado = data.filter(x => {
-        return cumpleFecha(x.Fecha, desde, hasta)
-            && cumpleBusqueda(x.CardName, cliente)
-            && cumpleBusqueda(x.ItemName, producto)
-            && cumpleBusqueda(x.Folio, folio);
-    });
+    const filtrado = data.filter(x =>
+        (!cliente || (x.CardName || '').toLowerCase().includes(cliente)) &&
+        (!producto || (x.ItemName || '').toLowerCase().includes(producto)) &&
+        (!folio || (x.Folio || '').includes(folio))
+    );
 
-    render(filtrado.slice(0, 300), filtrado.length, calcularTotal(filtrado));
-
-    document.getElementById('estado').textContent =
-        `Resultados encontrados: ${formatoNumero(filtrado.length)}. Mostrando máximo 300.`;
+    render(filtrado);
 }
 
-function limpiar() {
-    document.getElementById('cliente').value = '';
-    document.getElementById('producto').value = '';
-    document.getElementById('folio').value = '';
-    buscar();
-}
-
-function borrarBase() {
-    if (!confirm("¿Desea borrar la base local guardada?")) return;
-
-    localStorage.removeItem(STORAGE_DATA);
-    localStorage.removeItem(STORAGE_META);
-
-    data = [];
-    meta = null;
-
-    document.getElementById('fileInput').value = '';
-    document.getElementById('fechaDesde').value = '';
-    document.getElementById('fechaHasta').value = '';
-    document.getElementById('cliente').value = '';
-    document.getElementById('producto').value = '';
-    document.getElementById('folio').value = '';
-    document.getElementById('estado').textContent = 'Base local eliminada.';
-    document.getElementById('metaBase').textContent = '';
-    render([]);
-}
-
-function calcularTotal(lista) {
-    return lista.reduce((acc, x) => {
-        const n = Number(x.TotalLinea || 0);
-        return acc + (isNaN(n) ? 0 : n);
-    }, 0);
-}
-
-function render(lista, totalEncontrados = 0, totalVenta = 0) {
-    renderTabla(lista);
-    document.getElementById('totalVenta').textContent = '$' + formatoNumero(totalVenta);
-    document.getElementById('totalInfo').textContent =
-        totalEncontrados > 0
-            ? `Registros encontrados: ${formatoNumero(totalEncontrados)}. Mostrando: ${formatoNumero(lista.length)}.`
-            : 'Sin resultados.';
-}
-
-function renderTabla(lista) {
+function render(lista) {
     const tabla = document.getElementById('tabla');
     tabla.innerHTML = '';
 
-    if (!lista || lista.length === 0) {
-        tabla.innerHTML = '<tr><td colspan="8">Sin resultados.</td></tr>';
-        return;
-    }
+    let total = 0;
 
     lista.forEach(x => {
+        total += Number(x.TotalLinea || 0);
+
+        let botonPdf = '';
+        if (x.UrlPdf) {
+            botonPdf = `<a href="${x.UrlPdf}" target="_blank" style="
+                background:#198754;
+                color:white;
+                padding:4px 8px;
+                border-radius:4px;
+                text-decoration:none;
+                font-size:12px;">Ver</a>`;
+        }
+
         tabla.innerHTML += `
         <tr>
-            <td>${x.Fecha ?? ''}</td>
-            <td>${x.Folio ?? ''}</td>
-            <td>${x.CardName ?? ''}</td>
-            <td>${x.ItemName ?? ''}</td>
+            <td>${x.Fecha || ''}</td>
+            <td>${x.Folio || ''}</td>
+            <td>${x.CardName || ''}</td>
+            <td>${x.ItemName || ''}</td>
             <td class="num">${formatoNumero(x.Cantidad)}</td>
             <td class="num">${formatoNumero(x.Precio)}</td>
             <td class="num total">${formatoNumero(x.TotalLinea)}</td>
-            <td>${x.Vendedor ?? ''}</td>
+            <td>${x.Vendedor || ''}</td>
+            <td>${botonPdf}</td>
         </tr>`;
     });
+
+    document.getElementById('totalVenta').textContent = '$' + formatoNumero(total);
 }
 
-function formatoNumero(valor) {
-    const n = Number(valor);
-    if (isNaN(n)) return valor ?? '';
-    return n.toLocaleString('es-CL');
-}
-
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js')
-            .catch(function(error) {
-                console.log('Service Worker no registrado:', error);
-            });
-    });
+function formatoNumero(n) {
+    return Number(n).toLocaleString('es-CL');
 }
 </script>
 
