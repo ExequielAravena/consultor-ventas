@@ -33,6 +33,7 @@ th { background:#f2f2f2; position:sticky; top:0; z-index:1; }
 th.total-header { background:#dbeafe; color:#084298; }
 td.num { text-align:right; }
 td.total { background:#eef5ff; font-weight:bold; }
+
 .btn-pdf {
     display:inline-block;
     background:#198754;
@@ -42,7 +43,12 @@ td.total { background:#eef5ff; font-weight:bold; }
     text-decoration:none;
     font-size:12px;
     font-weight:bold;
+    border:none;
+    cursor:pointer;
+    width:auto;
+    margin:0;
 }
+
 @media (max-width:849px) {
     body { padding:10px; }
     h2 { font-size:22px; }
@@ -316,7 +322,7 @@ function renderTabla(lista) {
 
         let botonPdf = '';
         if (urlPdf && urlPdf.trim() !== '') {
-            botonPdf = `<a href="${urlPdf}" target="_blank" class="btn-pdf">Ver</a>`;
+            botonPdf = `<button type="button" class="btn-pdf" onclick='abrirPdf(${JSON.stringify(urlPdf)})'>Ver</button>`;
         }
 
         tabla.innerHTML += `
@@ -332,6 +338,20 @@ function renderTabla(lista) {
             <td>${botonPdf}</td>
         </tr>`;
     });
+}
+
+function abrirPdf(url) {
+    if (!url) return;
+
+    let urlLimpia = url
+        .toString()
+        .trim()
+        .replace(/\\u002B/g, '+')
+        .replace(/\\u002F/g, '/')
+        .replace(/&amp;/g, '&')
+        .replace(/^["']|["']$/g, '');
+
+    window.location.href = urlLimpia;
 }
 
 function obtenerFechaMin(lista) {
