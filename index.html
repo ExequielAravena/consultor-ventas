@@ -124,8 +124,8 @@ td.total { background:#eef5ff; font-weight:bold; }
 let data = [];
 let meta = null;
 
-const STORAGE_DATA = "ventas_base_v5";
-const STORAGE_META = "ventas_meta_v5";
+const STORAGE_DATA = "ventas_base_v6";
+const STORAGE_META = "ventas_meta_v6";
 
 window.onload = function() {
     const baseGuardada = localStorage.getItem(STORAGE_DATA);
@@ -318,11 +318,11 @@ function renderTabla(lista) {
     }
 
     lista.forEach(x => {
-        const urlPdf = x.UrlPdf || x.urlPdf || '';
+        const urlPdf = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
 
         let botonPdf = '';
-        if (urlPdf && urlPdf.trim() !== '') {
-            botonPdf = `<button type="button" class="btn-pdf" onclick='abrirPdf(${JSON.stringify(urlPdf)})'>Ver</button>`;
+        if (urlPdf && urlPdf.toString().trim() !== '') {
+            botonPdf = `<button type="button" class="btn-pdf" data-url="${escaparAtributo(urlPdf)}">Ver</button>`;
         }
 
         tabla.innerHTML += `
@@ -338,21 +338,76 @@ function renderTabla(lista) {
             <td>${botonPdf}</td>
         </tr>`;
     });
+
+    document.querySelectorAll('.btn-pdf').forEach(btn => {
+        btn.addEventListener('click', function() {
+            abrirPdf(this.getAttribute('data-url'));
+        });
+    });
 }
 
-function abrirPdf(url) {
-    if (!url) return;
+function escaparAtributo(valor) {
+    return (valor || '')
+        .toString()
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
 
-    let urlLimpia = url
+function normalizarUrlPdf(url) {
+    if (!url) return '';
+
+    let limpia = url
         .toString()
         .trim()
-        .replace(/\\u002B/g, '+')
-        .replace(/\\u002F/g, '/')
         .replace(/&amp;/g, '&')
         .replace(/^["']|["']$/g, '');
 
-    window.location.href = urlLimpia;
+    limpia = limpia.replace(/ /g, '+');
+
+    const marca = 'publico=';
+    const idx = limpia.indexOf(marca);
+
+    if (idx >= 0) {
+        const inicioValor = idx + marca.length;
+        const prefijo = limpia.substring(0, inicioValor);
+        let valor = limpia.substring(inicioValor);
+        let sufijo = '';
+
+        const idxAmp = valor.indexOf('&');
+        if (idxAmp >= 0) {
+            sufijo = valor.substring(idxAmp);
+            valor = valor.substring(0, idxAmp);
+        }
+
+        try {
+            valor = decodeURIComponent(valor);
+        } catch {}
+
+        valor = valor.replace(/ /g, '+');
+
+        return prefijo + encodeURIComponent(valor) + sufijo;
+    }
+
+    return limpia;
 }
+
+function abrirPdf(url) {
+    const urlFinal = normalizarUrlPdf(url);
+
+    if (!urlFinal) {
+        alert('No existe link PDF para este documento.');
+        return;
+    }
+
+    const ventana = window.open(urlFinal, '_blank');
+
+    if (!ventana) {
+        window.location.href = urlFinal;
+    }
+}
+
 
 function obtenerFechaMin(lista) {
     if (!lista || lista.length === 0) return '';
