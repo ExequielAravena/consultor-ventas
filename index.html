@@ -71,6 +71,8 @@ th { background:#eee; }
 
 let data = [];
 
+const API_PROXY = "https://marshy-unpack-unmade.ngrok-free.dev";
+
 document.getElementById('fileInput').addEventListener('change', function(e){
     const file = e.target.files[0];
     if (!file) return;
@@ -141,7 +143,7 @@ function abrirPdf(url){
         .replace(/&#39;/g, "'")
         .replace(/^["']|["']$/g, '');
 
-    const proxy = "http://192.168.11.86:5178/pdf?url=" + encodeURIComponent(url);
+    const proxy = API_PROXY + "/pdf?url=" + encodeURIComponent(url);
 
     console.log("PDF proxy:", proxy);
 
