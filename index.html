@@ -64,9 +64,7 @@ button {
   cursor:pointer;
 }
 
-.secundario {
-  background:#6c757d;
-}
+.secundario { background:#6c757d; }
 
 .botones {
   display:flex;
@@ -74,9 +72,7 @@ button {
   margin-top:8px;
 }
 
-.botones button {
-  flex:1;
-}
+.botones button { flex:1; }
 
 .status {
   margin-top:6px;
@@ -109,161 +105,106 @@ button {
   color:#555;
 }
 
-/* Escritorio */
-.wrap {
-  overflow-x:auto;
+.lista {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));
+  gap:10px;
 }
 
-table {
-  width:100%;
-  border-collapse:collapse;
+.venta-card {
   background:white;
+  border-radius:12px;
+  padding:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
+.venta-top {
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+  margin-bottom:8px;
+}
+
+.venta-folio {
+  font-size:15px;
+  font-weight:bold;
+}
+
+.venta-fecha {
+  font-size:12px;
+  color:#666;
+  margin-top:2px;
+}
+
+.venta-cliente {
+  font-size:15px;
+  font-weight:bold;
+  margin-bottom:6px;
+  line-height:1.25;
+}
+
+.venta-producto {
+  font-size:14px;
+  color:#333;
+  line-height:1.3;
+  margin-bottom:10px;
+}
+
+.venta-datos {
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.dato {
+  background:#f1f3f5;
+  border-radius:8px;
+  padding:8px;
   font-size:13px;
 }
 
-td,th {
-  border:1px solid #ccc;
-  padding:6px;
+.dato b {
+  display:block;
+  font-size:11px;
+  color:#666;
+  margin-bottom:3px;
 }
 
-th {
-  background:#eee;
+.total {
+  color:#0d6efd;
+  font-weight:bold;
 }
 
-td.num {
-  text-align:right;
+.venta-vendedor {
+  font-size:12px;
+  color:#666;
+  line-height:1.25;
+  margin-bottom:8px;
 }
 
 .btn-pdf {
   background:#198754;
   color:white;
-  padding:7px 10px;
+  padding:9px 12px;
   border:none;
-  border-radius:6px;
+  border-radius:8px;
   cursor:pointer;
-  width:auto;
-  font-size:13px;
-}
-
-/* Tarjetas móvil */
-.mobile-list {
-  display:none;
-}
-
-.sale-card {
-  background:white;
-  border-radius:10px;
-  padding:10px;
-  margin-bottom:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.08);
-}
-
-.sale-top {
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  align-items:flex-start;
-  margin-bottom:6px;
-}
-
-.sale-folio {
-  font-weight:bold;
+  width:100%;
   font-size:14px;
-}
-
-.sale-date {
-  font-size:12px;
-  color:#666;
-}
-
-.sale-client {
-  font-weight:bold;
-  font-size:14px;
-  margin-bottom:5px;
-}
-
-.sale-product {
-  font-size:13px;
-  color:#333;
-  line-height:1.25;
-  margin-bottom:8px;
-}
-
-.sale-grid {
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:6px;
-  font-size:12px;
-  margin-bottom:8px;
-}
-
-.sale-grid div {
-  background:#f1f3f5;
-  padding:6px;
-  border-radius:6px;
-}
-
-.sale-grid b {
-  display:block;
-  font-size:11px;
-  color:#555;
-}
-
-.sale-total {
-  color:#0d6efd;
-  font-weight:bold;
-}
-
-.sale-footer {
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  align-items:center;
-}
-
-.sale-vendedor {
-  font-size:11px;
-  color:#666;
-  line-height:1.2;
 }
 
 @media (max-width: 768px) {
-  body {
-    padding:8px;
-  }
-
-  .header {
-    padding:8px 10px;
-  }
-
-  .header h2 {
-    font-size:16px;
-  }
-
-  .card {
-    padding:9px;
-  }
-
-  input,button {
-    padding:8px;
-    font-size:13px;
-  }
-
-  .total-valor {
-    font-size:20px;
-  }
-
-  .wrap {
-    display:none;
-  }
-
-  .mobile-list {
-    display:block;
-  }
-
-  .botones {
-    gap:6px;
-  }
+  body { padding:8px; }
+  .header { padding:8px 10px; }
+  .header h2 { font-size:16px; }
+  .card { padding:9px; }
+  input,button { padding:8px; font-size:13px; }
+  .lista { grid-template-columns:1fr; }
+  .venta-datos { grid-template-columns:repeat(3, 1fr); gap:6px; }
+  .dato { padding:6px; font-size:12px; }
+  .total-valor { font-size:20px; }
 }
 </style>
 </head>
@@ -308,25 +249,7 @@ td.num {
   <div id="totalInfo" class="total-info">Sin resultados.</div>
 </div>
 
-<div class="wrap">
-<table>
-<thead>
-<tr>
-<th>Fecha</th>
-<th>Folio</th>
-<th>Cliente</th>
-<th>Producto</th>
-<th>Cant.</th>
-<th>Precio</th>
-<th>Total</th>
-<th>PDF</th>
-</tr>
-</thead>
-<tbody id="tabla"></tbody>
-</table>
-</div>
-
-<div id="listaMobile" class="mobile-list"></div>
+<div id="lista" class="lista"></div>
 
 <script>
 
@@ -425,78 +348,46 @@ function calcularTotal(lista){
 }
 
 function render(lista, totalEncontrados = 0, totalVenta = 0){
-    renderTabla(lista);
-    renderMobile(lista);
+    let html = "";
 
+    if (!lista || lista.length === 0) {
+        html = `<div class="venta-card">Sin resultados.</div>`;
+    } else {
+        lista.forEach(x => {
+            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
+
+            html += `
+            <div class="venta-card">
+              <div class="venta-top">
+                <div>
+                  <div class="venta-folio">Folio ${x.Folio ?? ''}</div>
+                  <div class="venta-fecha">${x.Fecha ?? ''}</div>
+                </div>
+                ${url ? `<button class="btn-pdf" style="width:auto;" onclick="abrirPdf('${esc(url)}')">PDF</button>` : ''}
+              </div>
+
+              <div class="venta-cliente">${x.CardName ?? ''}</div>
+              <div class="venta-producto">${x.ItemName ?? ''}</div>
+
+              <div class="venta-datos">
+                <div class="dato"><b>Cantidad</b>${formato(x.Cantidad)}</div>
+                <div class="dato"><b>Precio</b>${formato(x.Precio)}</div>
+                <div class="dato"><b>Total</b><span class="total">${formato(x.TotalLinea)}</span></div>
+              </div>
+
+              <div class="venta-vendedor">${x.Vendedor ?? ''}</div>
+
+              ${url ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">Ver PDF</button>` : ''}
+            </div>`;
+        });
+    }
+
+    document.getElementById("lista").innerHTML = html;
     document.getElementById("totalVenta").textContent = "$" + formato(totalVenta);
     document.getElementById("totalInfo").textContent =
         totalEncontrados > 0
         ? "Registros encontrados: " + formato(totalEncontrados) + ". Mostrando: " + formato(lista.length) + "."
         : "Sin resultados.";
-}
-
-function renderTabla(lista){
-    let html = "";
-
-    if (!lista || lista.length === 0) {
-        html = `<tr><td colspan="8">Sin resultados.</td></tr>`;
-    } else {
-        lista.forEach(x => {
-            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
-
-            html += `
-            <tr>
-                <td>${x.Fecha ?? ''}</td>
-                <td>${x.Folio ?? ''}</td>
-                <td>${x.CardName ?? ''}</td>
-                <td>${x.ItemName ?? ''}</td>
-                <td class="num">${formato(x.Cantidad)}</td>
-                <td class="num">${formato(x.Precio)}</td>
-                <td class="num"><b>${formato(x.TotalLinea)}</b></td>
-                <td>${url ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">Ver</button>` : ''}</td>
-            </tr>`;
-        });
-    }
-
-    document.getElementById("tabla").innerHTML = html;
-}
-
-function renderMobile(lista){
-    let html = "";
-
-    if (!lista || lista.length === 0) {
-        html = `<div class="sale-card">Sin resultados.</div>`;
-    } else {
-        lista.forEach(x => {
-            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
-
-            html += `
-            <div class="sale-card">
-              <div class="sale-top">
-                <div>
-                  <div class="sale-folio">Folio ${x.Folio ?? ''}</div>
-                  <div class="sale-date">${x.Fecha ?? ''}</div>
-                </div>
-                ${url ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">PDF</button>` : ''}
-              </div>
-
-              <div class="sale-client">${x.CardName ?? ''}</div>
-              <div class="sale-product">${x.ItemName ?? ''}</div>
-
-              <div class="sale-grid">
-                <div><b>Cant.</b>${formato(x.Cantidad)}</div>
-                <div><b>Precio</b>${formato(x.Precio)}</div>
-                <div><b>Total</b><span class="sale-total">${formato(x.TotalLinea)}</span></div>
-              </div>
-
-              <div class="sale-footer">
-                <div class="sale-vendedor">${x.Vendedor ?? ''}</div>
-              </div>
-            </div>`;
-        });
-    }
-
-    document.getElementById("listaMobile").innerHTML = html;
 }
 
 function esc(str){
