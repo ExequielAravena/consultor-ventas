@@ -47,7 +47,7 @@ th { background:#eee; }
 <h2>Consultor Offline Ventas</h2>
 
 <div class="card">
-  <input type="file" id="fileInput">
+  <input type="file" id="fileInput" accept=".json">
   <button onclick="buscar()">Buscar</button>
 </div>
 
@@ -73,6 +73,8 @@ let data = [];
 
 document.getElementById('fileInput').addEventListener('change', function(e){
     const file = e.target.files[0];
+    if (!file) return;
+
     const reader = new FileReader();
 
     reader.onload = function(e){
@@ -93,19 +95,21 @@ function render(lista){
 
     lista.slice(0,100).forEach(x => {
 
-        const url = x.UrlPdf || '';
+        const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
 
         html += `
         <tr>
-            <td>${x.Fecha}</td>
-            <td>${x.Folio}</td>
-            <td>${x.CardName}</td>
-            <td>${x.ItemName}</td>
+            <td>${x.Fecha ?? ''}</td>
+            <td>${x.Folio ?? ''}</td>
+            <td>${x.CardName ?? ''}</td>
+            <td>${x.ItemName ?? ''}</td>
             <td>${formato(x.TotalLinea)}</td>
             <td>
-                <button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">
-                    Ver
-                </button>
+                ${
+                    url
+                    ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">Ver</button>`
+                    : ''
+                }
             </td>
         </tr>`;
     });
@@ -113,70 +117,37 @@ function render(lista){
     document.getElementById("tabla").innerHTML = html;
 }
 
-// 🔥 ESCAPE HTML
 function esc(str){
     return (str || "")
+        .toString()
         .replace(/&/g,"&amp;")
         .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#39;")
         .replace(/</g,"&lt;")
         .replace(/>/g,"&gt;");
 }
 
-// 🔥 NORMALIZAR URL (FIX REAL)
-function normalizarUrlPdf(url){
-
-    if(!url) return '';
-
-    let limpia = url
-        .toString()
-        .trim()
-        .replace(/&amp;/g,'&')
-        .replace(/^["']|["']$/g,'');
-
-    // 🔥 CLAVE: FORZAR HTTPS
-    limpia = limpia.replace("http://","https://");
-
-    const marca = "publico=";
-    const idx = limpia.indexOf(marca);
-
-    if(idx >= 0){
-
-        let base = limpia.substring(0, idx + marca.length);
-        let valor = limpia.substring(idx + marca.length);
-
-        try{
-            valor = decodeURIComponent(valor);
-        }catch{}
-
-        valor = valor.replace(/ /g,'+');
-
-        return base + encodeURIComponent(valor);
-    }
-
-    return limpia;
-}
-
-// 🔥 ABRIR PDF (FINAL)
 function abrirPdf(url){
 
-    const final = normalizarUrlPdf(url);
-
-    if(!final){
+    if(!url){
         alert("Sin PDF");
         return;
     }
 
-    console.log("PDF:", final);
+    url = url
+        .toString()
+        .trim()
+        .replace(/&amp;/g, '&')
+        .replace(/&#39;/g, "'")
+        .replace(/^["']|["']$/g, '');
 
-    let win = window.open(final, "_blank");
+    const proxy = "http://192.168.11.86:5178/pdf?url=" + encodeURIComponent(url);
 
-    // fallback
-    if(!win){
-        window.location.href = final;
-    }
+    console.log("PDF proxy:", proxy);
+
+    window.location.href = proxy;
 }
 
-// formato número
 function formato(n){
     return Number(n || 0).toLocaleString('es-CL');
 }
