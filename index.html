@@ -4,59 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Consultor Offline Ventas</title>
+
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d6efd">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Ventas">
-<link rel="apple-touch-icon" href="icon-192.png">
 
 <style>
-body { font-family: Arial, sans-serif; padding: 15px; background:#f5f6f8; margin:0; }
-h2 { margin: 0 0 16px 0; font-size:24px; }
-.card { background:white; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-label { font-weight:bold; display:block; margin-top:8px; }
-input,button { width:100%; padding:10px; margin-top:8px; box-sizing:border-box; font-size:16px; border-radius:6px; border:1px solid #ccc; }
-button { background:#0d6efd; color:white; border:none; font-weight:bold; }
-button.secundario { background:#6c757d; }
-.botones { display:flex; gap:8px; }
-.botones button { flex:1; }
-.status { margin:10px 0; color:green; font-weight:bold; line-height:1.35; }
-.info { color:#555; font-size:13px; margin-top:6px; line-height:1.35; }
-.total-box { background:#fff; border-radius:10px; padding:12px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-.total-label { font-size:13px; color:#666; }
-.total-valor { font-size:22px; font-weight:bold; color:#0d6efd; margin-top:4px; }
-.wrap { overflow-x:auto; background:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-table { width:100%; border-collapse: collapse; background:white; font-size:14px; min-width:1120px; }
-td,th { border:1px solid #ccc; padding:6px; white-space:nowrap; }
-th { background:#f2f2f2; position:sticky; top:0; z-index:1; }
-th.total-header { background:#dbeafe; color:#084298; }
-td.num { text-align:right; }
-td.total { background:#eef5ff; font-weight:bold; }
+body { font-family: Arial; padding:15px; background:#f5f6f8; margin:0; }
+h2 { font-size:22px; }
 
-.btn-pdf {
-    display:inline-block;
-    background:#198754;
-    color:white;
-    padding:4px 8px;
-    border-radius:4px;
-    text-decoration:none;
-    font-size:12px;
-    font-weight:bold;
-    border:none;
-    cursor:pointer;
-    width:auto;
-    margin:0;
+.card { background:white; padding:15px; border-radius:10px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+
+input,button {
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  font-size:15px;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
 
-@media (max-width:849px) {
-    body { padding:10px; }
-    h2 { font-size:22px; }
-    .card { padding:12px; margin-bottom:12px; }
-    input,button { font-size:15px; padding:9px; }
-    table { font-size:13px; min-width:1050px; }
-    td,th { padding:5px; }
-    .total-valor { font-size:24px; }
+button { background:#0d6efd; color:white; border:none; }
+
+.wrap { overflow-x:auto; }
+
+table { width:100%; border-collapse:collapse; min-width:1100px; }
+td,th { border:1px solid #ccc; padding:6px; }
+th { background:#eee; }
+
+.btn-pdf {
+  background:#198754;
+  color:white;
+  padding:6px 10px;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -66,39 +47,8 @@ td.total { background:#eef5ff; font-weight:bold; }
 <h2>Consultor Offline Ventas</h2>
 
 <div class="card">
-    <label>Archivo de ventas</label>
-    <input type="file" id="fileInput" accept=".json">
-    <button class="secundario" onclick="borrarBase()">Borrar base local</button>
-    <div id="estado" class="status">Seleccione archivo JSON.</div>
-    <div id="metaBase" class="info"></div>
-</div>
-
-<div class="card">
-    <label>Fecha desde</label>
-    <input type="date" id="fechaDesde">
-
-    <label>Fecha hasta</label>
-    <input type="date" id="fechaHasta">
-
-    <label>Cliente</label>
-    <input type="text" id="cliente" placeholder="Opcional">
-
-    <label>Producto</label>
-    <input type="text" id="producto" placeholder="Opcional">
-
-    <label>Folio</label>
-    <input type="text" id="folio" placeholder="Opcional">
-
-    <div class="botones">
-        <button onclick="buscar()">Buscar</button>
-        <button class="secundario" onclick="limpiar()">Limpiar</button>
-    </div>
-</div>
-
-<div class="total-box">
-    <div class="total-label">Total venta del despliegue</div>
-    <div id="totalVenta" class="total-valor">$0</div>
-    <div id="totalInfo" class="info">Sin resultados.</div>
+  <input type="file" id="fileInput">
+  <button onclick="buscar()">Buscar</button>
 </div>
 
 <div class="wrap">
@@ -109,10 +59,7 @@ td.total { background:#eef5ff; font-weight:bold; }
 <th>Folio</th>
 <th>Cliente</th>
 <th>Producto</th>
-<th>Cantidad</th>
-<th>Precio</th>
-<th class="total-header">Total</th>
-<th>Vendedor</th>
+<th>Total</th>
 <th>PDF</th>
 </tr>
 </thead>
@@ -121,325 +68,119 @@ td.total { background:#eef5ff; font-weight:bold; }
 </div>
 
 <script>
+
 let data = [];
-let meta = null;
 
-const STORAGE_DATA = "ventas_base_v6";
-const STORAGE_META = "ventas_meta_v6";
-
-window.onload = function() {
-    const baseGuardada = localStorage.getItem(STORAGE_DATA);
-    const metaGuardada = localStorage.getItem(STORAGE_META);
-
-    if (baseGuardada) {
-        try {
-            data = JSON.parse(baseGuardada);
-            meta = metaGuardada ? JSON.parse(metaGuardada) : null;
-
-            aplicarRangoMeta();
-            mostrarMeta();
-
-            document.getElementById("estado").textContent =
-                `Base local cargada (${formatoNumero(data.length)} registros).`;
-
-            buscar();
-        } catch {
-            document.getElementById("estado").textContent = "Error leyendo base local guardada.";
-            render([]);
-        }
-    } else {
-        document.getElementById("estado").textContent = "No hay base local. Cargue archivo JSON.";
-        render([]);
-    }
-};
-
-document.getElementById('fileInput').addEventListener('change', function(e) {
+document.getElementById('fileInput').addEventListener('change', function(e){
     const file = e.target.files[0];
-    if (!file) return;
-
     const reader = new FileReader();
 
-    reader.onload = function(e) {
-        try {
-            const json = JSON.parse(e.target.result);
-
-            data = Array.isArray(json)
-                ? json
-                : (json.Registros || json.registros || []);
-
-            meta = {
-                archivo: file.name,
-                vendedor: json.Vendedor || json.vendedor || obtenerVendedorDesdeData(data),
-                desde: json.Desde || json.desde || obtenerFechaMin(data),
-                hasta: json.Hasta || json.hasta || obtenerFechaMax(data),
-                fechaSincronizacion: json.FechaSincronizacion || json.fechaSincronizacion || '',
-                fechaCargaLocal: new Date().toLocaleString('es-CL'),
-                registros: data.length
-            };
-
-            localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
-            localStorage.setItem(STORAGE_META, JSON.stringify(meta));
-
-            aplicarRangoMeta();
-            mostrarMeta();
-
-            document.getElementById('estado').textContent =
-                `Base actualizada y guardada localmente (${formatoNumero(data.length)} registros).`;
-
-            buscar();
-        } catch {
-            document.getElementById('estado').textContent = 'Error leyendo archivo JSON.';
-            render([]);
-        }
+    reader.onload = function(e){
+        data = JSON.parse(e.target.result);
+        render(data);
     };
 
     reader.readAsText(file);
 });
 
-function aplicarRangoMeta() {
-    if (!meta) return;
-    if (meta.desde) document.getElementById('fechaDesde').value = meta.desde;
-    if (meta.hasta) document.getElementById('fechaHasta').value = meta.hasta;
+function buscar(){
+    render(data);
 }
 
-function mostrarMeta() {
-    const div = document.getElementById("metaBase");
+function render(lista){
 
-    if (!meta) {
-        div.textContent = "";
-        return;
-    }
+    let html = "";
 
-    div.innerHTML =
-        `<b>Base activa:</b> ${meta.archivo || 'Base guardada'}<br>` +
-        `<b>Vendedor:</b> ${meta.vendedor || ''} | ` +
-        `<b>Rango base:</b> ${meta.desde || ''} al ${meta.hasta || ''}<br>` +
-        `<b>Última carga local:</b> ${meta.fechaCargaLocal || ''}`;
-}
+    lista.slice(0,100).forEach(x => {
 
-function normalizar(txt) {
-    return (txt || '')
-        .toString()
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-}
+        const url = x.UrlPdf || '';
 
-function cumpleBusqueda(valor, textoBusqueda) {
-    const palabras = normalizar(textoBusqueda)
-        .split(/\s+/)
-        .filter(Boolean);
-
-    const valorNormalizado = normalizar(valor);
-
-    return palabras.length === 0 || palabras.every(p => valorNormalizado.includes(p));
-}
-
-function cumpleFecha(fecha, desde, hasta) {
-    const f = (fecha || '').toString().substring(0, 10);
-    const okDesde = !desde || f >= desde;
-    const okHasta = !hasta || f <= hasta;
-
-    return okDesde && okHasta;
-}
-
-function buscar() {
-    const desde = document.getElementById('fechaDesde').value;
-    const hasta = document.getElementById('fechaHasta').value;
-    const cliente = document.getElementById('cliente').value;
-    const producto = document.getElementById('producto').value;
-    const folio = document.getElementById('folio').value;
-
-    const filtrado = data.filter(x => {
-        return cumpleFecha(x.Fecha, desde, hasta)
-            && cumpleBusqueda(x.CardName, cliente)
-            && cumpleBusqueda(x.ItemName, producto)
-            && cumpleBusqueda(x.Folio, folio);
-    });
-
-    render(filtrado.slice(0, 300), filtrado.length, calcularTotal(filtrado));
-
-    document.getElementById('estado').textContent =
-        `Resultados encontrados: ${formatoNumero(filtrado.length)}. Mostrando máximo 300.`;
-}
-
-function limpiar() {
-    document.getElementById('cliente').value = '';
-    document.getElementById('producto').value = '';
-    document.getElementById('folio').value = '';
-    buscar();
-}
-
-function borrarBase() {
-    if (!confirm("¿Desea borrar la base local guardada?")) return;
-
-    localStorage.removeItem(STORAGE_DATA);
-    localStorage.removeItem(STORAGE_META);
-
-    data = [];
-    meta = null;
-
-    document.getElementById('fileInput').value = '';
-    document.getElementById('fechaDesde').value = '';
-    document.getElementById('fechaHasta').value = '';
-    document.getElementById('cliente').value = '';
-    document.getElementById('producto').value = '';
-    document.getElementById('folio').value = '';
-    document.getElementById('estado').textContent = 'Base local eliminada.';
-    document.getElementById('metaBase').textContent = '';
-
-    render([]);
-}
-
-function calcularTotal(lista) {
-    return lista.reduce((acc, x) => {
-        const n = Number(x.TotalLinea || 0);
-        return acc + (isNaN(n) ? 0 : n);
-    }, 0);
-}
-
-function render(lista, totalEncontrados = 0, totalVenta = 0) {
-    renderTabla(lista);
-
-    document.getElementById('totalVenta').textContent = '$' + formatoNumero(totalVenta);
-    document.getElementById('totalInfo').textContent =
-        totalEncontrados > 0
-            ? `Registros encontrados: ${formatoNumero(totalEncontrados)}. Mostrando: ${formatoNumero(lista.length)}.`
-            : 'Sin resultados.';
-}
-
-function renderTabla(lista) {
-    const tabla = document.getElementById('tabla');
-    tabla.innerHTML = '';
-
-    if (!lista || lista.length === 0) {
-        tabla.innerHTML = '<tr><td colspan="9">Sin resultados.</td></tr>';
-        return;
-    }
-
-    lista.forEach(x => {
-        const urlPdf = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
-
-        let botonPdf = '';
-        if (urlPdf && urlPdf.toString().trim() !== '') {
-            botonPdf = `<button type="button" class="btn-pdf" data-url="${escaparAtributo(urlPdf)}">Ver</button>`;
-        }
-
-        tabla.innerHTML += `
+        html += `
         <tr>
-            <td>${x.Fecha ?? ''}</td>
-            <td>${x.Folio ?? ''}</td>
-            <td>${x.CardName ?? ''}</td>
-            <td>${x.ItemName ?? ''}</td>
-            <td class="num">${formatoNumero(x.Cantidad)}</td>
-            <td class="num">${formatoNumero(x.Precio)}</td>
-            <td class="num total">${formatoNumero(x.TotalLinea)}</td>
-            <td>${x.Vendedor ?? ''}</td>
-            <td>${botonPdf}</td>
+            <td>${x.Fecha}</td>
+            <td>${x.Folio}</td>
+            <td>${x.CardName}</td>
+            <td>${x.ItemName}</td>
+            <td>${formato(x.TotalLinea)}</td>
+            <td>
+                <button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">
+                    Ver
+                </button>
+            </td>
         </tr>`;
     });
 
-    document.querySelectorAll('.btn-pdf').forEach(btn => {
-        btn.addEventListener('click', function() {
-            abrirPdf(this.getAttribute('data-url'));
-        });
-    });
+    document.getElementById("tabla").innerHTML = html;
 }
 
-function escaparAtributo(valor) {
-    return (valor || '')
-        .toString()
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+// 🔥 ESCAPE HTML
+function esc(str){
+    return (str || "")
+        .replace(/&/g,"&amp;")
+        .replace(/"/g,"&quot;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
 }
 
-function normalizarUrlPdf(url) {
-    if (!url) return '';
+// 🔥 NORMALIZAR URL (FIX REAL)
+function normalizarUrlPdf(url){
+
+    if(!url) return '';
 
     let limpia = url
         .toString()
         .trim()
-        .replace(/&amp;/g, '&')
-        .replace(/^["']|["']$/g, '');
+        .replace(/&amp;/g,'&')
+        .replace(/^["']|["']$/g,'');
 
-    limpia = limpia.replace(/ /g, '+');
+    // 🔥 CLAVE: FORZAR HTTPS
+    limpia = limpia.replace("http://","https://");
 
-    const marca = 'publico=';
+    const marca = "publico=";
     const idx = limpia.indexOf(marca);
 
-    if (idx >= 0) {
-        const inicioValor = idx + marca.length;
-        const prefijo = limpia.substring(0, inicioValor);
-        let valor = limpia.substring(inicioValor);
-        let sufijo = '';
+    if(idx >= 0){
 
-        const idxAmp = valor.indexOf('&');
-        if (idxAmp >= 0) {
-            sufijo = valor.substring(idxAmp);
-            valor = valor.substring(0, idxAmp);
-        }
+        let base = limpia.substring(0, idx + marca.length);
+        let valor = limpia.substring(idx + marca.length);
 
-        try {
+        try{
             valor = decodeURIComponent(valor);
-        } catch {}
+        }catch{}
 
-        valor = valor.replace(/ /g, '+');
+        valor = valor.replace(/ /g,'+');
 
-        return prefijo + encodeURIComponent(valor) + sufijo;
+        return base + encodeURIComponent(valor);
     }
 
     return limpia;
 }
 
-function abrirPdf(url) {
-    const urlFinal = normalizarUrlPdf(url);
+// 🔥 ABRIR PDF (FINAL)
+function abrirPdf(url){
 
-    if (!urlFinal) {
-        alert('No existe link PDF para este documento.');
+    const final = normalizarUrlPdf(url);
+
+    if(!final){
+        alert("Sin PDF");
         return;
     }
 
-    const ventana = window.open(urlFinal, '_blank');
+    console.log("PDF:", final);
 
-    if (!ventana) {
-        window.location.href = urlFinal;
+    let win = window.open(final, "_blank");
+
+    // fallback
+    if(!win){
+        window.location.href = final;
     }
 }
 
-
-function obtenerFechaMin(lista) {
-    if (!lista || lista.length === 0) return '';
-    const fechas = lista.map(x => (x.Fecha || '').toString().substring(0, 10)).filter(Boolean).sort();
-    return fechas.length ? fechas[0] : '';
+// formato número
+function formato(n){
+    return Number(n || 0).toLocaleString('es-CL');
 }
 
-function obtenerFechaMax(lista) {
-    if (!lista || lista.length === 0) return '';
-    const fechas = lista.map(x => (x.Fecha || '').toString().substring(0, 10)).filter(Boolean).sort();
-    return fechas.length ? fechas[fechas.length - 1] : '';
-}
-
-function obtenerVendedorDesdeData(lista) {
-    if (!lista || lista.length === 0) return '';
-    return lista[0].Vendedor || '';
-}
-
-function formatoNumero(valor) {
-    const n = Number(valor);
-    if (isNaN(n)) return valor ?? '';
-    return n.toLocaleString('es-CL');
-}
-
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js')
-            .catch(function(error) {
-                console.log('Service Worker no registrado:', error);
-            });
-    });
-}
 </script>
 
 </body>
