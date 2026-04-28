@@ -9,93 +9,273 @@
 <meta name="theme-color" content="#0d6efd">
 
 <style>
-body { font-family: Arial; padding:15px; background:#f5f6f8; margin:0; }
-h2 { font-size:22px; }
+* { box-sizing:border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  background:#f5f6f8;
+  margin:0;
+  padding:10px;
+  color:#111;
+}
+
+.header {
+  background:#0d6efd;
+  color:white;
+  padding:10px 12px;
+  border-radius:10px;
+  margin-bottom:10px;
+}
+
+.header h2 {
+  margin:0;
+  font-size:18px;
+}
 
 .card {
   background:white;
-  padding:15px;
+  padding:10px;
   border-radius:10px;
-  margin-bottom:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
 
 label {
   font-weight:bold;
   display:block;
-  margin-top:10px;
+  margin-top:6px;
+  font-size:13px;
 }
 
 input,button {
   width:100%;
-  padding:10px;
-  margin-top:8px;
-  font-size:15px;
+  padding:9px;
+  margin-top:5px;
+  font-size:14px;
   border-radius:6px;
   border:1px solid #ccc;
-  box-sizing:border-box;
 }
 
-button { background:#0d6efd; color:white; border:none; cursor:pointer; }
-
-.botones {
-  display:flex;
-  gap:10px;
-}
-
-.botones button {
-  flex:1;
+button {
+  background:#0d6efd;
+  color:white;
+  border:none;
+  font-weight:bold;
+  cursor:pointer;
 }
 
 .secundario {
   background:#6c757d;
 }
 
+.botones {
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+
+.botones button {
+  flex:1;
+}
+
 .status {
-  margin-top:10px;
-  font-weight:bold;
+  margin-top:6px;
+  font-size:12px;
   color:#198754;
+  font-weight:bold;
 }
 
 .total-box {
   background:white;
-  padding:12px;
+  padding:10px;
   border-radius:10px;
-  margin-bottom:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
+.total-label {
+  font-size:13px;
+  color:#555;
 }
 
 .total-valor {
   color:#0d6efd;
-  font-size:24px;
+  font-size:22px;
   font-weight:bold;
 }
 
-.wrap { overflow-x:auto; }
+.total-info {
+  font-size:12px;
+  color:#555;
+}
 
-table { width:100%; border-collapse:collapse; min-width:1100px; background:white; }
-td,th { border:1px solid #ccc; padding:6px; }
-th { background:#eee; }
-td.num { text-align:right; }
+/* Escritorio */
+.wrap {
+  overflow-x:auto;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  font-size:13px;
+}
+
+td,th {
+  border:1px solid #ccc;
+  padding:6px;
+}
+
+th {
+  background:#eee;
+}
+
+td.num {
+  text-align:right;
+}
 
 .btn-pdf {
   background:#198754;
   color:white;
-  padding:6px 10px;
+  padding:7px 10px;
   border:none;
-  border-radius:5px;
+  border-radius:6px;
   cursor:pointer;
   width:auto;
+  font-size:13px;
+}
+
+/* Tarjetas móvil */
+.mobile-list {
+  display:none;
+}
+
+.sale-card {
+  background:white;
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
+.sale-top {
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:flex-start;
+  margin-bottom:6px;
+}
+
+.sale-folio {
+  font-weight:bold;
+  font-size:14px;
+}
+
+.sale-date {
+  font-size:12px;
+  color:#666;
+}
+
+.sale-client {
+  font-weight:bold;
+  font-size:14px;
+  margin-bottom:5px;
+}
+
+.sale-product {
+  font-size:13px;
+  color:#333;
+  line-height:1.25;
+  margin-bottom:8px;
+}
+
+.sale-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:6px;
+  font-size:12px;
+  margin-bottom:8px;
+}
+
+.sale-grid div {
+  background:#f1f3f5;
+  padding:6px;
+  border-radius:6px;
+}
+
+.sale-grid b {
+  display:block;
+  font-size:11px;
+  color:#555;
+}
+
+.sale-total {
+  color:#0d6efd;
+  font-weight:bold;
+}
+
+.sale-footer {
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:center;
+}
+
+.sale-vendedor {
+  font-size:11px;
+  color:#666;
+  line-height:1.2;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding:8px;
+  }
+
+  .header {
+    padding:8px 10px;
+  }
+
+  .header h2 {
+    font-size:16px;
+  }
+
+  .card {
+    padding:9px;
+  }
+
+  input,button {
+    padding:8px;
+    font-size:13px;
+  }
+
+  .total-valor {
+    font-size:20px;
+  }
+
+  .wrap {
+    display:none;
+  }
+
+  .mobile-list {
+    display:block;
+  }
+
+  .botones {
+    gap:6px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<h2>Consultor Offline Ventas</h2>
+<div class="header">
+  <h2>Consultor Offline Ventas</h2>
+</div>
 
 <div class="card">
-  <label>Archivo JSON de ventas</label>
+  <label>Archivo JSON</label>
   <input type="file" id="fileInput" accept=".json">
   <div id="estado" class="status">Seleccione archivo JSON.</div>
 </div>
@@ -123,9 +303,9 @@ td.num { text-align:right; }
 </div>
 
 <div class="total-box">
-  <div>Total venta del despliegue</div>
+  <div class="total-label">Total venta del despliegue</div>
   <div id="totalVenta" class="total-valor">$0</div>
-  <div id="totalInfo">Sin resultados.</div>
+  <div id="totalInfo" class="total-info">Sin resultados.</div>
 </div>
 
 <div class="wrap">
@@ -136,16 +316,17 @@ td.num { text-align:right; }
 <th>Folio</th>
 <th>Cliente</th>
 <th>Producto</th>
-<th>Cantidad</th>
+<th>Cant.</th>
 <th>Precio</th>
 <th>Total</th>
-<th>Vendedor</th>
 <th>PDF</th>
 </tr>
 </thead>
 <tbody id="tabla"></tbody>
 </table>
 </div>
+
+<div id="listaMobile" class="mobile-list"></div>
 
 <script>
 
@@ -225,7 +406,7 @@ function buscar(){
     render(filtrado.slice(0,300), filtrado.length, calcularTotal(filtrado));
 
     document.getElementById("estado").textContent =
-        "Resultados encontrados: " + filtrado.length.toLocaleString('es-CL') + ". Mostrando máximo 300.";
+        "Resultados: " + filtrado.length.toLocaleString('es-CL') + ". Mostrando máximo 300.";
 }
 
 function limpiar(){
@@ -244,14 +425,23 @@ function calcularTotal(lista){
 }
 
 function render(lista, totalEncontrados = 0, totalVenta = 0){
+    renderTabla(lista);
+    renderMobile(lista);
 
+    document.getElementById("totalVenta").textContent = "$" + formato(totalVenta);
+    document.getElementById("totalInfo").textContent =
+        totalEncontrados > 0
+        ? "Registros encontrados: " + formato(totalEncontrados) + ". Mostrando: " + formato(lista.length) + "."
+        : "Sin resultados.";
+}
+
+function renderTabla(lista){
     let html = "";
 
     if (!lista || lista.length === 0) {
-        html = `<tr><td colspan="9">Sin resultados.</td></tr>`;
+        html = `<tr><td colspan="8">Sin resultados.</td></tr>`;
     } else {
         lista.forEach(x => {
-
             const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
 
             html += `
@@ -263,24 +453,50 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
                 <td class="num">${formato(x.Cantidad)}</td>
                 <td class="num">${formato(x.Precio)}</td>
                 <td class="num"><b>${formato(x.TotalLinea)}</b></td>
-                <td>${x.Vendedor ?? ''}</td>
-                <td>
-                    ${
-                        url
-                        ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">Ver</button>`
-                        : ''
-                    }
-                </td>
+                <td>${url ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">Ver</button>` : ''}</td>
             </tr>`;
         });
     }
 
     document.getElementById("tabla").innerHTML = html;
-    document.getElementById("totalVenta").textContent = "$" + formato(totalVenta);
-    document.getElementById("totalInfo").textContent =
-        totalEncontrados > 0
-        ? "Registros encontrados: " + formato(totalEncontrados) + ". Mostrando: " + formato(lista.length) + "."
-        : "Sin resultados.";
+}
+
+function renderMobile(lista){
+    let html = "";
+
+    if (!lista || lista.length === 0) {
+        html = `<div class="sale-card">Sin resultados.</div>`;
+    } else {
+        lista.forEach(x => {
+            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
+
+            html += `
+            <div class="sale-card">
+              <div class="sale-top">
+                <div>
+                  <div class="sale-folio">Folio ${x.Folio ?? ''}</div>
+                  <div class="sale-date">${x.Fecha ?? ''}</div>
+                </div>
+                ${url ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">PDF</button>` : ''}
+              </div>
+
+              <div class="sale-client">${x.CardName ?? ''}</div>
+              <div class="sale-product">${x.ItemName ?? ''}</div>
+
+              <div class="sale-grid">
+                <div><b>Cant.</b>${formato(x.Cantidad)}</div>
+                <div><b>Precio</b>${formato(x.Precio)}</div>
+                <div><b>Total</b><span class="sale-total">${formato(x.TotalLinea)}</span></div>
+              </div>
+
+              <div class="sale-footer">
+                <div class="sale-vendedor">${x.Vendedor ?? ''}</div>
+              </div>
+            </div>`;
+        });
+    }
+
+    document.getElementById("listaMobile").innerHTML = html;
 }
 
 function esc(str){
@@ -294,7 +510,6 @@ function esc(str){
 }
 
 function abrirPdf(url){
-
     if(!url){
         alert("Sin PDF");
         return;
@@ -308,8 +523,6 @@ function abrirPdf(url){
         .replace(/^["']|["']$/g, '');
 
     const proxy = API_PROXY + "/pdf?url=" + encodeURIComponent(url);
-
-    console.log("PDF proxy:", proxy);
 
     window.location.href = proxy;
 }
