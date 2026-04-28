@@ -19,12 +19,6 @@ body {
   color:#111;
 }
 
-.header, .card, .total-box, .lista {
-  max-width:1100px;
-  margin-left:auto;
-  margin-right:auto;
-}
-
 .header {
   background:#0d6efd;
   color:white;
@@ -71,7 +65,7 @@ button {
 }
 
 .secundario { background:#6c757d; }
-.peligro { background:#dc3545; }
+.danger { background:#dc3545; }
 
 .botones {
   display:flex;
@@ -192,16 +186,26 @@ button {
 .btn-pdf {
   background:#198754;
   color:white;
-  padding:7px 10px;
+  padding:6px 10px;
   border:none;
   border-radius:7px;
   cursor:pointer;
   width:auto;
-  font-size:13px;
+  font-size:12px;
 }
 
 @media (min-width: 900px) {
   body { padding:12px; }
+
+  .lista,
+  .card,
+  .total-box,
+  .header {
+    max-width:1100px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+
   .venta-card { padding:10px 12px; }
   .venta-producto { font-size:14px; }
 }
@@ -217,9 +221,12 @@ button {
 <div class="card">
   <label>Archivo JSON</label>
   <input type="file" id="fileInput" accept=".json">
+
   <div class="botones">
-    <button class="peligro" onclick="borrarBase()">Borrar base local</button>
+    <button class="secundario" onclick="recargarBase()">Recargar base</button>
+    <button class="danger" onclick="borrarBase()">Borrar base</button>
   </div>
+
   <div id="estado" class="status">Seleccione archivo JSON.</div>
 </div>
 
@@ -249,4 +256,278 @@ button {
   <div class="total-label">Total venta del despliegue</div>
   <div id="totalVenta" class="total-valor">$0</div>
   <div id="totalInfo" class="total-info">Sin resultados.</div>
-</
+</div>
+
+<div id="lista" class="lista"></div>
+
+<script>
+let data = [];
+
+const API_PROXY = "https://marshy-unpack-unmade.ngrok-free.dev";
+const STORAGE_DATA = "ventas_offline_data_v1";
+const STORAGE_FILTERS = "ventas_offline_filters_v1";
+
+window.addEventListener("load", function(){
+    cargarBaseLocal();
+    cargarFiltros();
+    buscar();
+});
+
+document.getElementById('fileInput').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+        try {
+            data = JSON.parse(e.target.result);
+
+            localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
+
+            document.getElementById("estado").textContent =
+                "Archivo cargado y guardado localmente: " + data.length.toLocaleString('es-CL') + " registros.";
+
+            aplicarFechasBase();
+            guardarFiltros();
+            buscar();
+
+        } catch {
+            alert("Error leyendo archivo JSON.");
+        }
+    };
+
+    reader.readAsText(file);
+});
+
+["fechaDesde", "fechaHasta", "cliente", "producto", "folio"].forEach(id => {
+    document.getElementById(id).addEventListener("input", guardarFiltros);
+});
+
+function cargarBaseLocal(){
+    const base = localStorage.getItem(STORAGE_DATA);
+
+    if (!base) {
+        document.getElementById("estado").textContent = "Seleccione archivo JSON.";
+        return;
+    }
+
+    try {
+        data = JSON.parse(base);
+        document.getElementById("estado").textContent =
+            "Base local cargada: " + data.length.toLocaleString('es-CL') + " registros.";
+    } catch {
+        data = [];
+        localStorage.removeItem(STORAGE_DATA);
+        document.getElementById("estado").textContent = "Base local dañada. Cargue nuevamente el JSON.";
+    }
+}
+
+function recargarBase(){
+    cargarBaseLocal();
+    buscar();
+}
+
+function borrarBase(){
+    if (!confirm("¿Desea borrar la base local y filtros?")) return;
+
+    localStorage.removeItem(STORAGE_DATA);
+    localStorage.removeItem(STORAGE_FILTERS);
+
+    data = [];
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fechaDesde').value = '';
+    document.getElementById('fechaHasta').value = '';
+    document.getElementById('cliente').value = '';
+    document.getElementById('producto').value = '';
+    document.getElementById('folio').value = '';
+
+    document.getElementById("estado").textContent = "Base local eliminada.";
+    render([], 0, 0);
+}
+
+function guardarFiltros(){
+    const filtros = {
+        fechaDesde: document.getElementById('fechaDesde').value,
+        fechaHasta: document.getElementById('fechaHasta').value,
+        cliente: document.getElementById('cliente').value,
+        producto: document.getElementById('producto').value,
+        folio: document.getElementById('folio').value
+    };
+
+    localStorage.setItem(STORAGE_FILTERS, JSON.stringify(filtros));
+}
+
+function cargarFiltros(){
+    const guardado = localStorage.getItem(STORAGE_FILTERS);
+
+    if (!guardado) {
+        if (data.length > 0) aplicarFechasBase();
+        return;
+    }
+
+    try {
+        const filtros = JSON.parse(guardado);
+        document.getElementById('fechaDesde').value = filtros.fechaDesde || '';
+        document.getElementById('fechaHasta').value = filtros.fechaHasta || '';
+        document.getElementById('cliente').value = filtros.cliente || '';
+        document.getElementById('producto').value = filtros.producto || '';
+        document.getElementById('folio').value = filtros.folio || '';
+    } catch {
+        aplicarFechasBase();
+    }
+}
+
+function aplicarFechasBase(){
+    if (!data || data.length === 0) return;
+
+    const fechas = data
+        .map(x => (x.Fecha || '').toString().substring(0,10))
+        .filter(Boolean)
+        .sort();
+
+    if (fechas.length > 0) {
+        document.getElementById('fechaDesde').value = fechas[0];
+        document.getElementById('fechaHasta').value = fechas[fechas.length - 1];
+    }
+}
+
+function normalizar(txt){
+    return (txt || '')
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+function cumpleTexto(valor, busqueda){
+    const palabras = normalizar(busqueda).split(/\s+/).filter(Boolean);
+    const valorNorm = normalizar(valor);
+    return palabras.length === 0 || palabras.every(p => valorNorm.includes(p));
+}
+
+function buscar(){
+    guardarFiltros();
+
+    const desde = document.getElementById('fechaDesde').value;
+    const hasta = document.getElementById('fechaHasta').value;
+    const cliente = document.getElementById('cliente').value;
+    const producto = document.getElementById('producto').value;
+    const folio = document.getElementById('folio').value;
+
+    const filtrado = data.filter(x => {
+        const fecha = (x.Fecha || '').toString().substring(0,10);
+
+        return (!desde || fecha >= desde)
+            && (!hasta || fecha <= hasta)
+            && cumpleTexto(x.CardName, cliente)
+            && cumpleTexto(x.ItemName, producto)
+            && cumpleTexto(x.Folio, folio);
+    });
+
+    render(filtrado.slice(0,300), filtrado.length, calcularTotal(filtrado));
+
+    document.getElementById("estado").textContent =
+        data.length > 0
+        ? "Resultados: " + filtrado.length.toLocaleString('es-CL') + ". Mostrando máximo 300."
+        : "Seleccione archivo JSON.";
+}
+
+function limpiar(){
+    document.getElementById('cliente').value = '';
+    document.getElementById('producto').value = '';
+    document.getElementById('folio').value = '';
+    aplicarFechasBase();
+    guardarFiltros();
+    buscar();
+}
+
+function calcularTotal(lista){
+    return lista.reduce((acc, x) => {
+        const n = Number(x.TotalLinea || 0);
+        return acc + (isNaN(n) ? 0 : n);
+    }, 0);
+}
+
+function render(lista, totalEncontrados = 0, totalVenta = 0){
+    let html = "";
+
+    if (!lista || lista.length === 0) {
+        html = `<div class="venta-card">Sin resultados.</div>`;
+    } else {
+        lista.forEach(x => {
+            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
+
+            html += `
+            <div class="venta-card">
+              <div class="venta-top">
+                <div>
+                  <div class="venta-folio">Folio ${x.Folio ?? ''}</div>
+                  <div class="venta-fecha">${x.Fecha ?? ''}</div>
+                </div>
+                ${url ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">PDF</button>` : ''}
+              </div>
+
+              <div class="venta-cliente">${x.CardName ?? ''}</div>
+              <div class="venta-producto">${x.ItemName ?? ''}</div>
+
+              <div class="venta-datos">
+                <div class="dato"><b>Cant.</b>${formato(x.Cantidad)}</div>
+                <div class="dato"><b>Precio</b>${formato(x.Precio)}</div>
+                <div class="dato"><b>Total</b><span class="total">${formato(x.TotalLinea)}</span></div>
+              </div>
+
+              <div class="venta-vendedor">${x.Vendedor ?? ''}</div>
+            </div>`;
+        });
+    }
+
+    document.getElementById("lista").innerHTML = html;
+    document.getElementById("totalVenta").textContent = "$" + formato(totalVenta);
+    document.getElementById("totalInfo").textContent =
+        totalEncontrados > 0
+        ? "Registros encontrados: " + formato(totalEncontrados) + ". Mostrando: " + formato(lista.length) + "."
+        : "Sin resultados.";
+}
+
+function esc(str){
+    return (str || "")
+        .toString()
+        .replace(/&/g,"&amp;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#39;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+}
+
+function abrirPdf(url){
+    if(!url){
+        alert("Sin PDF");
+        return;
+    }
+
+    url = url
+        .toString()
+        .trim()
+        .replace(/&amp;/g, '&')
+        .replace(/&#39;/g, "'")
+        .replace(/^["']|["']$/g, '');
+
+    const proxy = API_PROXY + "/pdf?url=" + encodeURIComponent(url);
+
+    const win = window.open(proxy, "_blank");
+
+    if (!win) {
+        alert("El navegador bloqueó la nueva pestaña. Revise permisos de ventanas emergentes.");
+    }
+}
+
+function formato(n){
+    const num = Number(n || 0);
+    if (isNaN(num)) return '';
+    return num.toLocaleString('es-CL');
+}
+</script>
+
+</body>
+</html>
