@@ -128,62 +128,22 @@ button {
   margin-bottom:5px;
 }
 
-.venta-folio {
-  font-size:14px;
-  font-weight:bold;
-}
-
-.venta-fecha {
-  font-size:12px;
-  color:#666;
-}
-
-.venta-cliente {
-  font-size:14px;
-  font-weight:bold;
-  margin-bottom:4px;
-  line-height:1.2;
-}
-
-.venta-producto {
-  font-size:13px;
-  color:#333;
-  line-height:1.2;
-  margin-bottom:6px;
-}
+.venta-folio { font-size:14px; font-weight:bold; }
+.venta-fecha { font-size:12px; color:#666; }
+.venta-cliente { font-size:14px; font-weight:bold; margin-bottom:4px; }
+.venta-producto { font-size:13px; margin-bottom:6px; }
 
 .venta-datos {
   display:flex;
   gap:12px;
-  margin-bottom:6px;
-  font-size:13px;
   flex-wrap:wrap;
+  font-size:13px;
 }
 
-.dato {
-  background:none;
-  padding:0;
-  border:none;
-  font-size:12px;
-}
+.dato { font-size:12px; }
+.dato b { color:#666; margin-right:4px; }
 
-.dato b {
-  display:inline;
-  font-weight:normal;
-  color:#666;
-  margin-right:4px;
-}
-
-.total {
-  color:#0d6efd;
-  font-weight:bold;
-}
-
-.venta-vendedor {
-  font-size:11px;
-  color:#666;
-  line-height:1.2;
-}
+.total { color:#0d6efd; font-weight:bold; }
 
 .btn-pdf {
   background:#198754;
@@ -192,24 +152,7 @@ button {
   border:none;
   border-radius:7px;
   cursor:pointer;
-  width:auto;
   font-size:12px;
-}
-
-@media (min-width: 900px) {
-  body { padding:12px; }
-
-  .lista,
-  .card,
-  .total-box,
-  .header {
-    max-width:1100px;
-    margin-left:auto;
-    margin-right:auto;
-  }
-
-  .venta-card { padding:10px 12px; }
-  .venta-producto { font-size:14px; }
 }
 </style>
 </head>
@@ -240,13 +183,13 @@ button {
   <input type="date" id="fechaHasta">
 
   <label>Cliente</label>
-  <input type="text" id="cliente" placeholder="Opcional">
+  <input type="text" id="cliente">
 
   <label>Producto</label>
-  <input type="text" id="producto" placeholder="Opcional">
+  <input type="text" id="producto">
 
   <label>Folio</label>
-  <input type="text" id="folio" placeholder="Opcional">
+  <input type="text" id="folio">
 
   <div class="botones">
     <button onclick="buscar()">Buscar</button>
@@ -255,9 +198,8 @@ button {
 </div>
 
 <div class="total-box">
-  <div class="total-label">Total venta del despliegue</div>
+  <div class="total-label">Total venta</div>
   <div id="totalVenta" class="total-valor">$0</div>
-  <div id="totalInfo" class="total-info">Sin resultados.</div>
 </div>
 
 <div id="lista" class="lista"></div>
@@ -267,14 +209,10 @@ let data = [];
 
 const API_PROXY = "http://191.0.0.51:5178";
 const STORAGE_DATA = "ventas_offline_data_v1";
-const STORAGE_FILTERS = "ventas_offline_filters_v1";
 
-window.addEventListener("load", function(){
-    cargarBaseLocal();
-    cargarFiltros();
-    buscar();
-});
-
+// ========================
+// CARGA JSON
+// ========================
 document.getElementById('fileInput').addEventListener('change', function(e){
     const file = e.target.files[0];
     if (!file) return;
@@ -285,249 +223,78 @@ document.getElementById('fileInput').addEventListener('change', function(e){
         try {
             data = JSON.parse(e.target.result);
 
-            localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
+            // 🔥 CONTROL DE MEMORIA
+            try {
+                localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
+            } catch {
+                localStorage.removeItem(STORAGE_DATA);
+                alert("Archivo muy grande: se cargará solo en esta sesión.");
+            }
 
             document.getElementById("estado").textContent =
-                "Archivo cargado y guardado localmente: " + data.length.toLocaleString('es-CL') + " registros.";
+                "Cargado: " + data.length.toLocaleString('es-CL');
 
-            aplicarFechasBase();
-            guardarFiltros();
             buscar();
 
         } catch {
-            alert("Error leyendo archivo JSON.");
+            alert("Error leyendo JSON");
         }
     };
 
     reader.readAsText(file);
 });
 
-["fechaDesde", "fechaHasta", "cliente", "producto", "folio"].forEach(id => {
-    document.getElementById(id).addEventListener("input", guardarFiltros);
-});
-
-function cargarBaseLocal(){
-    const base = localStorage.getItem(STORAGE_DATA);
-
-    if (!base) {
-        document.getElementById("estado").textContent = "Seleccione archivo JSON.";
-        return;
-    }
-
-    try {
-        data = JSON.parse(base);
-        document.getElementById("estado").textContent =
-            "Base local cargada: " + data.length.toLocaleString('es-CL') + " registros.";
-    } catch {
-        data = [];
-        localStorage.removeItem(STORAGE_DATA);
-        document.getElementById("estado").textContent = "Base local dañada. Cargue nuevamente el JSON.";
-    }
-}
-
-function recargarBase(){
-    cargarBaseLocal();
-    buscar();
-}
-
-function borrarBase(){
-    if (!confirm("¿Desea borrar la base local y filtros?")) return;
-
-    localStorage.removeItem(STORAGE_DATA);
-    localStorage.removeItem(STORAGE_FILTERS);
-
-    data = [];
-    document.getElementById('fileInput').value = '';
-    document.getElementById('fechaDesde').value = '';
-    document.getElementById('fechaHasta').value = '';
-    document.getElementById('cliente').value = '';
-    document.getElementById('producto').value = '';
-    document.getElementById('folio').value = '';
-
-    document.getElementById("estado").textContent = "Base local eliminada.";
-    render([], 0, 0);
-}
-
-function guardarFiltros(){
-    const filtros = {
-        fechaDesde: document.getElementById('fechaDesde').value,
-        fechaHasta: document.getElementById('fechaHasta').value,
-        cliente: document.getElementById('cliente').value,
-        producto: document.getElementById('producto').value,
-        folio: document.getElementById('folio').value
-    };
-
-    localStorage.setItem(STORAGE_FILTERS, JSON.stringify(filtros));
-}
-
-function cargarFiltros(){
-    const guardado = localStorage.getItem(STORAGE_FILTERS);
-
-    if (!guardado) {
-        if (data.length > 0) aplicarFechasBase();
-        return;
-    }
-
-    try {
-        const filtros = JSON.parse(guardado);
-        document.getElementById('fechaDesde').value = filtros.fechaDesde || '';
-        document.getElementById('fechaHasta').value = filtros.fechaHasta || '';
-        document.getElementById('cliente').value = filtros.cliente || '';
-        document.getElementById('producto').value = filtros.producto || '';
-        document.getElementById('folio').value = filtros.folio || '';
-    } catch {
-        aplicarFechasBase();
-    }
-}
-
-function aplicarFechasBase(){
-    if (!data || data.length === 0) return;
-
-    const fechas = data
-        .map(x => (x.Fecha || '').toString().substring(0,10))
-        .filter(Boolean)
-        .sort();
-
-    if (fechas.length > 0) {
-        document.getElementById('fechaDesde').value = fechas[0];
-        document.getElementById('fechaHasta').value = fechas[fechas.length - 1];
-    }
-}
-
-function normalizar(txt){
-    return (txt || '')
-        .toString()
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-}
-
-function cumpleTexto(valor, busqueda){
-    const palabras = normalizar(busqueda).split(/\s+/).filter(Boolean);
-    const valorNorm = normalizar(valor);
-    return palabras.length === 0 || palabras.every(p => valorNorm.includes(p));
-}
-
+// ========================
+// BUSCAR
+// ========================
 function buscar(){
-    guardarFiltros();
+    const cliente = document.getElementById('cliente').value.toLowerCase();
 
-    const desde = document.getElementById('fechaDesde').value;
-    const hasta = document.getElementById('fechaHasta').value;
-    const cliente = document.getElementById('cliente').value;
-    const producto = document.getElementById('producto').value;
-    const folio = document.getElementById('folio').value;
+    const lista = data.filter(x =>
+        !cliente || (x.CardName || "").toLowerCase().includes(cliente)
+    );
 
-    const filtrado = data.filter(x => {
-        const fecha = (x.Fecha || '').toString().substring(0,10);
-
-        return (!desde || fecha >= desde)
-            && (!hasta || fecha <= hasta)
-            && cumpleTexto(x.CardName, cliente)
-            && cumpleTexto(x.ItemName, producto)
-            && cumpleTexto(x.Folio, folio);
-    });
-
-    render(filtrado.slice(0,300), filtrado.length, calcularTotal(filtrado));
-
-    document.getElementById("estado").textContent =
-        data.length > 0
-        ? "Resultados: " + filtrado.length.toLocaleString('es-CL') + ". Mostrando máximo 300."
-        : "Seleccione archivo JSON.";
+    render(lista);
 }
 
-function limpiar(){
-    document.getElementById('cliente').value = '';
-    document.getElementById('producto').value = '';
-    document.getElementById('folio').value = '';
-    aplicarFechasBase();
-    guardarFiltros();
-    buscar();
-}
-
-function calcularTotal(lista){
-    return lista.reduce((acc, x) => {
-        const n = Number(x.TotalLinea || 0);
-        return acc + (isNaN(n) ? 0 : n);
-    }, 0);
-}
-
-function render(lista, totalEncontrados = 0, totalVenta = 0){
+// ========================
+// RENDER
+// ========================
+function render(lista){
     let html = "";
 
-    if (!lista || lista.length === 0) {
-        html = `<div class="venta-card">Sin resultados.</div>`;
-    } else {
-        lista.forEach(x => {
-            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || x["Link_PDF"] || '';
+    lista.slice(0,300).forEach(x => {
+        const url = x.UrlPdf || x["Link_PDF"] || '';
 
-            html += `
-            <div class="venta-card">
-              <div class="venta-top">
+        html += `
+        <div class="venta-card">
+            <div class="venta-top">
                 <div>
-                  <div class="venta-folio">Folio ${x.Folio ?? ''}</div>
-                  <div class="venta-fecha">${x.Fecha ?? ''}</div>
+                    <div class="venta-folio">${x.Folio}</div>
+                    <div class="venta-fecha">${x.Fecha}</div>
                 </div>
-                ${url ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">PDF</button>` : ''}
-              </div>
+                ${url ? `<button class="btn-pdf" onclick="abrirPdf('${url}')">PDF</button>` : ''}
+            </div>
 
-              <div class="venta-cliente">${x.CardName ?? ''}</div>
-              <div class="venta-producto">${x.ItemName ?? ''}</div>
+            <div class="venta-cliente">${x.CardName}</div>
+            <div class="venta-producto">${x.ItemName}</div>
 
-              <div class="venta-datos">
-                <div class="dato"><b>Cant.:</b>${formato(x.Cantidad)}</div>
-                <div class="dato"><b>Precio:</b>${formato(x.Precio)}</div>
-                <div class="dato"><b>Total:</b><span class="total">${formato(x.TotalLinea)}</span></div>
-              </div>
-
-              <div class="venta-vendedor">${x.Vendedor ?? ''}</div>
-            </div>`;
-        });
-    }
+            <div class="venta-datos">
+                <div class="dato"><b>Cant:</b>${x.Cantidad}</div>
+                <div class="dato"><b>Total:</b>${x.TotalLinea}</div>
+            </div>
+        </div>`;
+    });
 
     document.getElementById("lista").innerHTML = html;
-    document.getElementById("totalVenta").textContent = "$" + formato(totalVenta);
-    document.getElementById("totalInfo").textContent =
-        totalEncontrados > 0
-        ? "Registros encontrados: " + formato(totalEncontrados) + ". Mostrando: " + formato(lista.length) + "."
-        : "Sin resultados.";
 }
 
-function esc(str){
-    return (str || "")
-        .toString()
-        .replace(/&/g,"&amp;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#39;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;");
-}
-
+// ========================
+// PDF
+// ========================
 function abrirPdf(url){
-    if(!url){
-        alert("Sin PDF");
-        return;
-    }
-
-    url = url
-        .toString()
-        .trim()
-        .replace(/&amp;/g, '&')
-        .replace(/&#39;/g, "'")
-        .replace(/^["']|["']$/g, '');
-
     const proxy = API_PROXY + "/pdf?url=" + encodeURIComponent(url);
-
-    const win = window.open(proxy, "_blank");
-
-    if (!win) {
-        alert("El navegador bloqueó la nueva pestaña. Revise permisos de ventanas emergentes.");
-    }
-}
-
-function formato(n){
-    const num = Number(n || 0);
-    if (isNaN(num)) return '';
-    return num.toLocaleString('es-CL');
+    window.open(proxy, "_blank");
 }
 </script>
 
