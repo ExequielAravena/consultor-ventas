@@ -265,7 +265,7 @@ button {
 <script>
 let data = [];
 
-const API_PROXY = "https://marshy-unpack-unmade.ngrok-free.dev";
+const API_PROXY = "http://191.0.0.51:5178";
 const STORAGE_DATA = "ventas_offline_data_v1";
 const STORAGE_FILTERS = "ventas_offline_filters_v1";
 
@@ -458,7 +458,7 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
         html = `<div class="venta-card">Sin resultados.</div>`;
     } else {
         lista.forEach(x => {
-            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || '';
+            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || x["Link_PDF"] || '';
 
             html += `
             <div class="venta-card">
