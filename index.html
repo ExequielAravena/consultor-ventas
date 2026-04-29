@@ -39,10 +39,7 @@ body {
   box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
 
-.card {
-  padding:8px;
-  margin-bottom:8px;
-}
+.card { padding:8px; margin-bottom:8px; }
 
 label {
   font-weight:bold;
@@ -91,21 +88,9 @@ button {
   margin-bottom:8px;
 }
 
-.total-label {
-  font-size:12px;
-  color:#555;
-}
-
-.total-valor {
-  color:#0d6efd;
-  font-size:20px;
-  font-weight:bold;
-}
-
-.total-info {
-  font-size:12px;
-  color:#555;
-}
+.total-label { font-size:12px; color:#555; }
+.total-valor { color:#0d6efd; font-size:20px; font-weight:bold; }
+.total-info { font-size:12px; color:#555; }
 
 .lista {
   display:flex;
@@ -113,9 +98,7 @@ button {
   gap:8px;
 }
 
-.venta-card {
-  padding:9px;
-}
+.venta-card { padding:9px; }
 
 .venta-top {
   display:flex;
@@ -125,15 +108,8 @@ button {
   margin-bottom:5px;
 }
 
-.venta-folio {
-  font-size:14px;
-  font-weight:bold;
-}
-
-.venta-fecha {
-  font-size:12px;
-  color:#666;
-}
+.venta-folio { font-size:14px; font-weight:bold; }
+.venta-fecha { font-size:12px; color:#666; }
 
 .venta-cliente {
   font-size:14px;
@@ -157,9 +133,7 @@ button {
   flex-wrap:wrap;
 }
 
-.dato {
-  font-size:12px;
-}
+.dato { font-size:12px; }
 
 .dato b {
   display:inline;
@@ -168,10 +142,7 @@ button {
   margin-right:4px;
 }
 
-.total {
-  color:#0d6efd;
-  font-weight:bold;
-}
+.total { color:#0d6efd; font-weight:bold; }
 
 .venta-vendedor {
   font-size:11px;
@@ -508,7 +479,7 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
                 ${
                   url
                   ? `<div class="acciones-link">
-                       <a class="btn-open" href="${escAttr(url)}" target="_blank" rel="noopener noreferrer" onclick="copiarSilencioso('${esc(url)}')">Abrir PDF</a>
+                       <a class="btn-open" href="${escAttr(url)}" target="_blank" rel="noopener noreferrer">Abrir PDF</a>
                      </div>`
                   : ''
                 }
@@ -536,16 +507,6 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
         : "Sin resultados.";
 }
 
-function esc(str){
-    return (str || "")
-        .toString()
-        .replace(/&/g,"&amp;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#39;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;");
-}
-
 function escAttr(str){
     return (str || "")
         .toString()
@@ -562,14 +523,6 @@ function limpiarUrl(url){
         .replace(/&amp;/g, '&')
         .replace(/&#39;/g, "'")
         .replace(/^["']|["']$/g, '');
-}
-
-async function copiarSilencioso(url){
-    url = limpiarUrl(url);
-
-    try {
-        await navigator.clipboard.writeText(url);
-    } catch {}
 }
 
 function formato(n){
