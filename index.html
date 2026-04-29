@@ -179,7 +179,7 @@ button {
   line-height:1.2;
 }
 
-.btn-pdf {
+.btn-link {
   background:#198754;
   color:white;
   padding:6px 10px;
@@ -260,7 +260,6 @@ button {
 <script>
 let data = [];
 
-const API_PROXY = "http://191.0.0.51:5178";
 const STORAGE_DATA = "ventas_offline_data_v1";
 const STORAGE_FILTERS = "ventas_offline_filters_v1";
 
@@ -494,7 +493,7 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
                   <div class="venta-folio">Folio ${x.Folio ?? ''}</div>
                   <div class="venta-fecha">${x.Fecha ?? ''}</div>
                 </div>
-                ${url ? `<button class="btn-pdf" onclick="abrirPdf('${esc(url)}')">PDF</button>` : ''}
+                ${url ? `<button class="btn-link" onclick="abrirLink('${esc(url)}')">Abrir link</button>` : ''}
               </div>
 
               <div class="venta-cliente">${x.CardName ?? ''}</div>
@@ -529,25 +528,31 @@ function esc(str){
         .replace(/>/g,"&gt;");
 }
 
-function abrirPdf(url){
-    if(!url){
-        alert("Sin PDF");
-        return;
-    }
-
-    url = url
+function limpiarUrl(url){
+    return (url || "")
         .toString()
         .trim()
         .replace(/&amp;/g, '&')
         .replace(/&#39;/g, "'")
         .replace(/^["']|["']$/g, '');
+}
 
-    const proxy = API_PROXY + "/pdf?url=" + encodeURIComponent(url);
+async function abrirLink(url){
+    url = limpiarUrl(url);
 
-    const win = window.open(proxy, "_blank");
+    if(!url){
+        alert("Sin link disponible.");
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(url);
+    } catch {}
+
+    const win = window.open(url, "_blank");
 
     if (!win) {
-        alert("El navegador bloqueó la nueva pestaña. Revise permisos de ventanas emergentes.");
+        alert("Link copiado. El navegador bloqueó la apertura automática; péguelo manualmente.");
     }
 }
 
