@@ -179,16 +179,37 @@ button {
   line-height:1.2;
 }
 
-.btn-link {
-  background:#198754;
+.acciones-link {
+  display:flex;
+  gap:6px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.btn-open,
+.btn-copy {
+  display:inline-block;
+  text-decoration:none;
   color:white;
   padding:6px 10px;
-  border:none;
   border-radius:7px;
-  cursor:pointer;
-  width:auto;
   font-size:12px;
+  font-weight:bold;
+  line-height:1;
+  white-space:nowrap;
+  border:none;
+  width:auto;
   margin-top:0;
+}
+
+.btn-open {
+  background:#198754;
+}
+
+.btn-copy {
+  background:#6c757d;
+  cursor:pointer;
 }
 
 @media (min-width: 900px) {
@@ -484,7 +505,7 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
         html = `<div class="venta-card">Sin resultados.</div>`;
     } else {
         lista.forEach(x => {
-            const url = x.UrlPdf || x.urlPdf || x["Link PDF"] || x["Link_PDF"] || '';
+            const url = limpiarUrl(x.UrlPdf || x.urlPdf || x["Link PDF"] || x["Link_PDF"] || '');
 
             html += `
             <div class="venta-card">
@@ -493,7 +514,14 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
                   <div class="venta-folio">Folio ${x.Folio ?? ''}</div>
                   <div class="venta-fecha">${x.Fecha ?? ''}</div>
                 </div>
-                ${url ? `<button class="btn-link" onclick="abrirLink('${esc(url)}')">Abrir link</button>` : ''}
+                ${
+                  url
+                  ? `<div class="acciones-link">
+                       <a class="btn-open" href="${escAttr(url)}" target="_blank" rel="noopener noreferrer">Abrir PDF</a>
+                       <button class="btn-copy" onclick="copiarLink('${esc(url)}')">Copiar</button>
+                     </div>`
+                  : ''
+                }
               </div>
 
               <div class="venta-cliente">${x.CardName ?? ''}</div>
@@ -528,6 +556,15 @@ function esc(str){
         .replace(/>/g,"&gt;");
 }
 
+function escAttr(str){
+    return (str || "")
+        .toString()
+        .replace(/&/g,"&amp;")
+        .replace(/"/g,"&quot;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+}
+
 function limpiarUrl(url){
     return (url || "")
         .toString()
@@ -537,7 +574,7 @@ function limpiarUrl(url){
         .replace(/^["']|["']$/g, '');
 }
 
-async function abrirLink(url){
+async function copiarLink(url){
     url = limpiarUrl(url);
 
     if(!url){
@@ -547,12 +584,9 @@ async function abrirLink(url){
 
     try {
         await navigator.clipboard.writeText(url);
-    } catch {}
-
-    const win = window.open(url, "_blank");
-
-    if (!win) {
-        alert("Link copiado. El navegador bloqueó la apertura automática; péguelo manualmente.");
+        alert("Link copiado. Péguelo en el navegador para abrir el PDF.");
+    } catch {
+        alert("No se pudo copiar automáticamente. Mantenga presionado el botón Abrir PDF y copie el enlace.");
     }
 }
 
