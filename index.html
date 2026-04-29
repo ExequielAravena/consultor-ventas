@@ -158,7 +158,8 @@ button {
   justify-content:flex-end;
 }
 
-.btn-open {
+.btn-open,
+.btn-copy {
   display:inline-block;
   text-decoration:none;
   color:white;
@@ -171,7 +172,15 @@ button {
   border:none;
   width:auto;
   margin-top:0;
+}
+
+.btn-open {
   background:#198754;
+}
+
+.btn-copy {
+  background:#6c757d;
+  cursor:pointer;
 }
 
 @media (min-width: 900px) {
@@ -480,6 +489,7 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
                   url
                   ? `<div class="acciones-link">
                        <a class="btn-open" href="${escAttr(url)}" target="_blank" rel="noopener noreferrer">Abrir PDF</a>
+                       <button class="btn-copy" onclick="copiarLink('${esc(url)}')">Copiar link</button>
                      </div>`
                   : ''
                 }
@@ -507,6 +517,16 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
         : "Sin resultados.";
 }
 
+function esc(str){
+    return (str || "")
+        .toString()
+        .replace(/&/g,"&amp;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#39;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+}
+
 function escAttr(str){
     return (str || "")
         .toString()
@@ -523,6 +543,22 @@ function limpiarUrl(url){
         .replace(/&amp;/g, '&')
         .replace(/&#39;/g, "'")
         .replace(/^["']|["']$/g, '');
+}
+
+async function copiarLink(url){
+    url = limpiarUrl(url);
+
+    if(!url){
+        alert("Sin link disponible.");
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(url);
+        alert("Link copiado. Abra una pestaña del navegador y péguelo para visualizar el PDF.");
+    } catch {
+        alert("No se pudo copiar automáticamente. Mantenga presionado Abrir PDF y copie el enlace.");
+    }
 }
 
 function formato(n){
