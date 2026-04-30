@@ -158,7 +158,6 @@ button {
   justify-content:flex-end;
 }
 
-.btn-open,
 .btn-copy {
   display:inline-block;
   text-decoration:none;
@@ -172,13 +171,6 @@ button {
   border:none;
   width:auto;
   margin-top:0;
-}
-
-.btn-open {
-  background:#198754;
-}
-
-.btn-copy {
   background:#6c757d;
   cursor:pointer;
 }
@@ -488,7 +480,6 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
                 ${
                   url
                   ? `<div class="acciones-link">
-                       <a class="btn-open" href="${escAttr(url)}" target="_blank" rel="noopener noreferrer">Abrir PDF</a>
                        <button class="btn-copy" onclick="copiarLink('${esc(url)}')">Copiar link</button>
                      </div>`
                   : ''
@@ -527,15 +518,6 @@ function esc(str){
         .replace(/>/g,"&gt;");
 }
 
-function escAttr(str){
-    return (str || "")
-        .toString()
-        .replace(/&/g,"&amp;")
-        .replace(/"/g,"&quot;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;");
-}
-
 function limpiarUrl(url){
     return (url || "")
         .toString()
@@ -557,7 +539,7 @@ async function copiarLink(url){
         await navigator.clipboard.writeText(url);
         alert("Link copiado. Abra una pestaña del navegador y péguelo para visualizar el PDF.");
     } catch {
-        alert("No se pudo copiar automáticamente. Mantenga presionado Abrir PDF y copie el enlace.");
+        alert("No se pudo copiar automáticamente. Mantenga presionado el link copiado o revise el dato UrlPdf.");
     }
 }
 
