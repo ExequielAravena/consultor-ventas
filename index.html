@@ -559,137 +559,65 @@ function limpiar(){
 
 function calcularTotal(lista){
     return lista.reduce((acc, x) => {
-        const n = Number(x.TotalLinea || 0);
+        const n = Number(x.TotalLinea ?? x.totalLinea ?? 0);
         return acc + (isNaN(n) ? 0 : n);
     }, 0);
 }
 
 function render(lista, totalEncontrados = 0, totalVenta = 0){
-
     let html = "";
 
     if (!lista || lista.length === 0) {
-
-        html =
-        `<div class="venta-card">
-            Sin resultados.
-        </div>`;
-
+        html = `<div class="venta-card">Sin resultados.</div>`;
     } else {
-
         lista.forEach(x => {
-
-            const folio =
-                x.Folio || x.folio || '';
-
-            const fecha =
-                x.Fecha || x.fecha || '';
-
-            const cardName =
-                x.CardName || x.cardName || '';
-
-            const itemName =
-                x.ItemName || x.itemName || '';
-
-            const cantidad =
-                x.Cantidad || x.cantidad || 0;
-
-            const precio =
-                x.Precio || x.precio || 0;
-
-            const totalLinea =
-                x.TotalLinea || x.totalLinea || 0;
-
-            const vendedor =
-                x.Vendedor || x.vendedor || '';
-
-            const url =
-                limpiarUrl(
-                    x.UrlPdf ||
-                    x.urlPdf ||
-                    ''
-                );
+            const folio = x.Folio ?? x.folio ?? '';
+            const fecha = x.Fecha ?? x.fecha ?? '';
+            const cardName = x.CardName ?? x.cardName ?? '';
+            const itemName = x.ItemName ?? x.itemName ?? '';
+            const cantidad = x.Cantidad ?? x.cantidad ?? 0;
+            const precio = x.Precio ?? x.precio ?? 0;
+            const totalLinea = x.TotalLinea ?? x.totalLinea ?? 0;
+            const vendedor = x.Vendedor ?? x.vendedor ?? '';
+            const url = limpiarUrl(x.UrlPdf || x.urlPdf || x["Link PDF"] || x["Link_PDF"] || '');
 
             html += `
             <div class="venta-card">
-
-                <div class="venta-top">
-                    <div>
-                        <div class="venta-folio">
-                            Folio ${folio}
-                        </div>
-
-                        <div class="venta-fecha">
-                            ${fecha}
-                        </div>
-                    </div>
-
-                    ${
-                        url
-                        ? `
-                        <div class="acciones-link">
-                            <button
-                                class="btn-copy"
-                                onclick="copiarLink('${esc(url)}')">
-                                Copiar link
-                            </button>
-                        </div>
-                        `
-                        : ''
-                    }
-
+              <div class="venta-top">
+                <div>
+                  <div class="venta-folio">Folio ${folio}</div>
+                  <div class="venta-fecha">${fecha}</div>
                 </div>
+                ${
+                  url
+                  ? `<div class="acciones-link">
+                       <button class="btn-copy" onclick="copiarLink('${esc(url)}')">Copiar link</button>
+                     </div>`
+                  : ''
+                }
+              </div>
 
-                <div class="venta-cliente">
-                    ${cardName}
-                </div>
+              <div class="venta-cliente">${cardName}</div>
+              <div class="venta-producto">${itemName}</div>
 
-                <div class="venta-producto">
-                    ${itemName}
-                </div>
+              <div class="venta-datos">
+                <div class="dato"><b>Cant.:</b>${formato(cantidad)}</div>
+                <div class="dato"><b>Precio:</b>${formato(precio)}</div>
+                <div class="dato"><b>Total:</b><span class="total">${formato(totalLinea)}</span></div>
+              </div>
 
-                <div class="venta-datos">
-                    <div class="dato">
-                        <b>Cant.:</b>
-                        ${formato(cantidad)}
-                    </div>
-
-                    <div class="dato">
-                        <b>Precio:</b>
-                        ${formato(precio)}
-                    </div>
-
-                    <div class="dato">
-                        <b>Total:</b>
-                        <span class="total">
-                            ${formato(totalLinea)}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="venta-vendedor">
-                    ${vendedor}
-                </div>
-
-            </div>
-            `;
+              <div class="venta-vendedor">${vendedor}</div>
+            </div>`;
         });
     }
 
     document.getElementById("lista").innerHTML = html;
-
-    document.getElementById("totalVenta").textContent =
-        "$" + formato(totalVenta);
-
+    document.getElementById("totalVenta").textContent = "$" + formato(totalVenta);
     document.getElementById("totalInfo").textContent =
         totalEncontrados > 0
-        ? "Registros encontrados: " +
-          formato(totalEncontrados) +
-          ". Mostrando: " +
-          formato(lista.length) + "."
+        ? "Registros encontrados: " + formato(totalEncontrados) + ". Mostrando: " + formato(lista.length) + "."
         : "Sin resultados.";
 }
-
 function esc(str){
     return (str || "")
         .toString()
