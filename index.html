@@ -202,6 +202,8 @@ button {
 <div class="card">
   <label>Archivo JSON</label>
   <input type="file" id="fileInput" accept=".json">
+  <label>Vendedor para sincronizar</label>
+<input type="text" id="vendedorSync" placeholder="Ejemplo: Juan Pérez o código vendedor">
 
 <div class="botones">
   <button onclick="sincronizarDesdeApi()">Sincronizar SAP</button>
@@ -307,7 +309,12 @@ document.getElementById('fileInput').addEventListener('change', function(e){
 async function sincronizarDesdeApi(){
     const estado = document.getElementById("estado");
 
-    const vendedor = "";
+ const vendedor = document.getElementById('vendedorSync').value.trim();
+  if (!vendedor) {
+    alert("Debe indicar vendedor para sincronizar.");
+    estado.textContent = "Debe indicar vendedor.";
+    return;
+}
     const desde =
         document.getElementById('fechaDesde').value || "2024-07-01";
 
