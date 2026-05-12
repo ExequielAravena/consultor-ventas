@@ -488,13 +488,13 @@ function buscar(){
     const folio = document.getElementById('folio').value;
 
     const filtrado = data.filter(x => {
-        const fecha = (x.Fecha || '').toString().substring(0,10);
+      const fecha = (x.Fecha || x.fecha || '').toString().substring(0,10);
 
-        return (!desde || fecha >= desde)
-            && (!hasta || fecha <= hasta)
-            && cumpleTexto(x.CardName, cliente)
-            && cumpleTexto(x.ItemName, producto)
-            && cumpleTexto(x.Folio, folio);
+     return (!desde || fecha >= desde)
+    && (!hasta || fecha <= hasta)
+    && cumpleTexto(x.CardName || x.cardName, cliente)
+    && cumpleTexto(x.ItemName || x.itemName, producto)
+    && cumpleTexto(x.Folio || x.folio, folio);
     });
 
     render(filtrado.slice(0,300), filtrado.length, calcularTotal(filtrado));
