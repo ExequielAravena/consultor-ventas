@@ -203,11 +203,11 @@ button {
   <label>Archivo JSON</label>
   <input type="file" id="fileInput" accept=".json">
 
-  <div class="botones">
-    <button class="secundario" onclick="recargarBase()">Recargar base</button>
-    <button class="danger" onclick="borrarBase()">Borrar base</button>
-  </div>
-
+<div class="botones">
+  <button onclick="sincronizarDesdeApi()">Sincronizar SAP</button>
+  <button class="secundario" onclick="recargarBase()">Recargar base</button>
+  <button class="danger" onclick="borrarBase()">Borrar base</button>
+</div>
   <div id="estado" class="status">Seleccione archivo JSON.</div>
 </div>
 
@@ -243,10 +243,11 @@ button {
 
 <script>
 let data = [];
-
 const STORAGE_DATA = "ventas_offline_data_v1";
 const STORAGE_FILTERS = "ventas_offline_filters_v1";
 
+const API_SYNC = "https://api.cotaco.cl/api/ventas-historicas-sync";
+  
 window.addEventListener("load", function(){
     cargarBaseLocal();
     cargarFiltros();
@@ -303,7 +304,57 @@ document.getElementById('fileInput').addEventListener('change', function(e){
 ["fechaDesde", "fechaHasta", "cliente", "producto", "folio"].forEach(id => {
     document.getElementById(id).addEventListener("input", guardarFiltros);
 });
+async function sincronizarDesdeApi(){
+    const estado = document.getElementById("estado");
 
+    const vendedor = "";
+    const desde =
+        document.getElementById('fechaDesde').value || "2024-07-01";
+
+    const hasta =
+        document.getElementById('fechaHasta').value ||
+        new Date().toISOString().substring(0,10);
+
+    estado.textContent = "Sincronizando ventas desde SAP...";
+
+    try {
+
+        const url =
+            `${API_SYNC}?vendedor=${encodeURIComponent(vendedor)}&desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`;
+
+        const resp = await fetch(url);
+
+        if (!resp.ok) {
+            throw new Error("HTTP " + resp.status);
+        }
+
+        data = await resp.json();
+
+        localStorage.setItem(
+            STORAGE_DATA,
+            JSON.stringify(data)
+        );
+
+        estado.textContent =
+            "Base sincronizada desde SAP: " +
+            data.length.toLocaleString('es-CL') +
+            " registros.";
+
+        aplicarFechasBase();
+        guardarFiltros();
+        buscar();
+
+    } catch (e) {
+
+        estado.textContent =
+            "Error sincronizando desde SAP.";
+
+        alert(
+            "No se pudo sincronizar desde SAP.\n\n" +
+            e.message
+        );
+    }
+}
 function cargarBaseLocal(){
     const base = localStorage.getItem(STORAGE_DATA);
 
