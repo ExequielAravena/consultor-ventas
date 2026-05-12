@@ -200,17 +200,33 @@ button {
 </div>
 
 <div class="card">
-  <label>Archivo JSON</label>
-  <input type="file" id="fileInput" accept=".json">
-  <label>Vendedor para sincronizar</label>
-<input type="text" id="vendedorSync" placeholder="Ejemplo: Juan Pérez o código vendedor">
 
-<div class="botones">
-  <button onclick="sincronizarDesdeApi()">Sincronizar SAP</button>
-  <button class="secundario" onclick="recargarBase()">Recargar base</button>
-  <button class="danger" onclick="borrarBase()">Borrar base</button>
-</div>
-  <div id="estado" class="status">Seleccione archivo JSON.</div>
+  <label>Vendedor para sincronizar</label>
+  <input
+    type="text"
+    id="vendedorSync"
+    placeholder="Ejemplo: Fabiola, Juan, Zamora">
+
+  <div class="botones">
+    <button onclick="sincronizarDesdeApi()">
+      Sincronizar SAP
+    </button>
+
+    <button class="secundario"
+            onclick="recargarBase()">
+      Recargar base
+    </button>
+
+    <button class="danger"
+            onclick="borrarBase()">
+      Borrar base
+    </button>
+  </div>
+
+  <div id="estado" class="status">
+    Sin base local. Sincronice ventas desde SAP.
+  </div>
+
 </div>
 
 <div class="card">
@@ -261,47 +277,7 @@ window.addEventListener("load", function(){
     }
 });
 
-document.getElementById('fileInput').addEventListener('change', function(e){
-    const file = e.target.files[0];
-    if (!file) return;
 
-    const reader = new FileReader();
-
-    reader.onload = function(e){
-        try {
-            data = JSON.parse(e.target.result);
-
-            let guardadoLocal = true;
-
-            try {
-                localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
-            } catch (err) {
-                guardadoLocal = false;
-                localStorage.removeItem(STORAGE_DATA);
-
-                alert(
-                    "El archivo JSON es muy grande para guardar en la memoria del celular.\n\n" +
-                    "La información se cargará solo para esta sesión.\n" +
-                    "Si cierra la app, deberá cargar nuevamente el JSON."
-                );
-            }
-
-            document.getElementById("estado").textContent =
-                guardadoLocal
-                ? "Archivo cargado y guardado localmente: " + data.length.toLocaleString('es-CL') + " registros."
-                : "Archivo cargado solo en sesión: " + data.length.toLocaleString('es-CL') + " registros.";
-
-            aplicarFechasBase();
-            guardarFiltros();
-            buscar();
-
-        } catch {
-            alert("Error leyendo archivo JSON.");
-        }
-    };
-
-    reader.readAsText(file);
-});
 
 ["fechaDesde", "fechaHasta", "cliente", "producto", "folio"].forEach(id => {
     document.getElementById(id).addEventListener("input", guardarFiltros);
@@ -399,7 +375,7 @@ function borrarBase(){
     localStorage.removeItem(STORAGE_FILTERS);
 
     data = [];
-    document.getElementById('fileInput').value = '';
+
     document.getElementById('fechaDesde').value = '';
     document.getElementById('fechaHasta').value = '';
     document.getElementById('cliente').value = '';
