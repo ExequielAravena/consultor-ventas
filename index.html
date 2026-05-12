@@ -411,13 +411,14 @@ function borrarBase(){
 }
 
 function guardarFiltros(){
-    const filtros = {
-        fechaDesde: document.getElementById('fechaDesde').value,
-        fechaHasta: document.getElementById('fechaHasta').value,
-        cliente: document.getElementById('cliente').value,
-        producto: document.getElementById('producto').value,
-        folio: document.getElementById('folio').value
-    };
+   const filtros = {
+    vendedorSync: document.getElementById('vendedorSync').value,
+    fechaDesde: document.getElementById('fechaDesde').value,
+    fechaHasta: document.getElementById('fechaHasta').value,
+    cliente: document.getElementById('cliente').value,
+    producto: document.getElementById('producto').value,
+    folio: document.getElementById('folio').value
+};
 
     try {
         localStorage.setItem(STORAGE_FILTERS, JSON.stringify(filtros));
@@ -434,6 +435,7 @@ function cargarFiltros(){
 
     try {
         const filtros = JSON.parse(guardado);
+      document.getElementById('vendedorSync').value = '';
         document.getElementById('fechaDesde').value = filtros.fechaDesde || '';
         document.getElementById('fechaHasta').value = filtros.fechaHasta || '';
         document.getElementById('cliente').value = filtros.cliente || '';
