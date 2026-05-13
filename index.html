@@ -175,6 +175,15 @@ button {
   cursor:pointer;
 }
 
+.oculto { display:none; }
+
+.usuario-box {
+  font-size:12px;
+  color:#555;
+  margin-top:5px;
+  line-height:1.4;
+}
+
 @media (min-width: 900px) {
   body { padding:12px; }
 
@@ -199,76 +208,98 @@ button {
   <h2>Consultor Offline Ventas</h2>
 </div>
 
-<div class="card">
+<div id="loginBox" class="card">
+  <label>Usuario</label>
+  <input type="text" id="loginUsuario" placeholder="Ejemplo: fsalas">
 
-  <label>Vendedor para sincronizar</label>
-  <input
-    type="text"
-    id="vendedorSync"
-    placeholder="Ejemplo: Fabiola, Juan, Zamora">
-
-  <div class="botones">
-    <button onclick="sincronizarDesdeApi()">
-      Sincronizar SAP
-    </button>
-
-    <button class="secundario"
-            onclick="recargarBase()">
-      Recargar base
-    </button>
-
-    <button class="danger"
-            onclick="borrarBase()">
-      Borrar base
-    </button>
-  </div>
-
-  <div id="estado" class="status">
-    Sin base local. Sincronice ventas desde SAP.
-  </div>
-
-</div>
-
-<div class="card">
-  <label>Fecha desde</label>
-  <input type="date" id="fechaDesde">
-
-  <label>Fecha hasta</label>
-  <input type="date" id="fechaHasta">
-
-  <label>Cliente</label>
-  <input type="text" id="cliente" placeholder="Opcional">
-
-  <label>Producto</label>
-  <input type="text" id="producto" placeholder="Opcional">
-
-  <label>Folio</label>
-  <input type="text" id="folio" placeholder="Opcional">
+  <label>Password</label>
+  <input type="password" id="loginPassword" placeholder="Ingrese contraseña">
 
   <div class="botones">
-    <button onclick="buscar()">Buscar</button>
-    <button class="secundario" onclick="limpiar()">Limpiar</button>
+    <button onclick="login()">Ingresar</button>
   </div>
+
+  <div id="loginEstado" class="status">Ingrese usuario y password.</div>
 </div>
 
-<div class="total-box">
-  <div class="total-label">Total venta del despliegue</div>
-  <div id="totalVenta" class="total-valor">$0</div>
-  <div id="totalInfo" class="total-info">Sin resultados.</div>
-</div>
+<div id="appBox" class="oculto">
 
-<div id="lista" class="lista"></div>
+  <div class="card">
+    <div class="usuario-box">
+      <b>Usuario:</b> <span id="usuarioActual"></span><br>
+      <b>Vendedor:</b> <span id="vendedorActual"></span><br>
+      <b>Rol:</b> <span id="rolActual"></span>
+    </div>
+
+    <div id="adminBox" class="oculto">
+      <label>Vendedor a consultar</label>
+      <input type="text" id="vendedorConsulta" placeholder="Ejemplo: Fabiola, Zamora, Juan">
+    </div>
+
+    <div class="botones">
+      <button onclick="sincronizarDesdeApi()">Sincronizar SAP</button>
+      <button class="secundario" onclick="recargarBase()">Recargar base</button>
+      <button class="danger" onclick="borrarBase()">Borrar base</button>
+    </div>
+
+    <div class="botones">
+      <button class="secundario" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+    <div id="estado" class="status">Sin base local. Sincronice ventas desde SAP.</div>
+  </div>
+
+  <div class="card">
+    <label>Fecha desde</label>
+    <input type="date" id="fechaDesde">
+
+    <label>Fecha hasta</label>
+    <input type="date" id="fechaHasta">
+
+    <label>Cliente</label>
+    <input type="text" id="cliente" placeholder="Opcional">
+
+    <label>Producto</label>
+    <input type="text" id="producto" placeholder="Opcional">
+
+    <label>Folio</label>
+    <input type="text" id="folio" placeholder="Opcional">
+
+    <div class="botones">
+      <button onclick="buscar()">Buscar</button>
+      <button class="secundario" onclick="limpiar()">Limpiar</button>
+    </div>
+  </div>
+
+  <div class="total-box">
+    <div class="total-label">Total venta del despliegue</div>
+    <div id="totalVenta" class="total-valor">$0</div>
+    <div id="totalInfo" class="total-info">Sin resultados.</div>
+  </div>
+
+  <div id="lista" class="lista"></div>
+
+</div>
 
 <script>
 let data = [];
+
 const STORAGE_DATA = "ventas_offline_data_v1";
 const STORAGE_FILTERS = "ventas_offline_filters_v1";
+const STORAGE_LOGIN = "ventas_offline_login_v1";
 
+const API_LOGIN = "https://api.cotaco.cl/api/login";
 const API_SYNC = "https://api.cotaco.cl/api/ventas-historicas-sync";
-  
+
 window.addEventListener("load", function(){
+    cargarSesion();
     cargarBaseLocal();
     cargarFiltros();
+
+    ["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "vendedorConsulta"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("input", guardarFiltros);
+    });
 
     if (data.length > 0) {
         buscar();
@@ -277,33 +308,146 @@ window.addEventListener("load", function(){
     }
 });
 
+async function login(){
+    const usuario = document.getElementById("loginUsuario").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+    const estado = document.getElementById("loginEstado");
 
+    if (!usuario || !password) {
+        estado.textContent = "Debe ingresar usuario y password.";
+        return;
+    }
 
-["fechaDesde", "fechaHasta", "cliente", "producto", "folio"].forEach(id => {
-    document.getElementById(id).addEventListener("input", guardarFiltros);
-});
+    estado.textContent = "Validando acceso...";
+
+    try {
+        const resp = await fetch(API_LOGIN, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                usuario: usuario,
+                password: password
+            })
+        });
+
+        if (!resp.ok) {
+            throw new Error("Usuario o password inválido.");
+        }
+
+        const sesion = await resp.json();
+
+        localStorage.setItem(STORAGE_LOGIN, JSON.stringify(sesion));
+
+        aplicarSesion(sesion);
+
+        estado.textContent = "Login correcto.";
+
+    } catch (e) {
+        estado.textContent = "Error de login.";
+        alert(e.message);
+    }
+}
+
+function cargarSesion(){
+    const guardado = localStorage.getItem(STORAGE_LOGIN);
+
+    if (!guardado) {
+        document.getElementById("loginBox").classList.remove("oculto");
+        document.getElementById("appBox").classList.add("oculto");
+        return;
+    }
+
+    try {
+        const sesion = JSON.parse(guardado);
+        aplicarSesion(sesion);
+    } catch {
+        localStorage.removeItem(STORAGE_LOGIN);
+        document.getElementById("loginBox").classList.remove("oculto");
+        document.getElementById("appBox").classList.add("oculto");
+    }
+}
+
+function aplicarSesion(sesion){
+    document.getElementById("loginBox").classList.add("oculto");
+    document.getElementById("appBox").classList.remove("oculto");
+
+    document.getElementById("usuarioActual").textContent =
+        sesion.usuario || sesion.Usuario || "";
+
+    document.getElementById("vendedorActual").textContent =
+        sesion.slpName || sesion.SlpName || "";
+
+    document.getElementById("rolActual").textContent =
+        sesion.rol || sesion.Rol || "";
+
+    const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
+
+    if (rol === "ADMIN") {
+        document.getElementById("adminBox").classList.remove("oculto");
+    } else {
+        document.getElementById("adminBox").classList.add("oculto");
+        document.getElementById("vendedorConsulta").value = "";
+    }
+}
+
+function obtenerSesion(){
+    try {
+        return JSON.parse(localStorage.getItem(STORAGE_LOGIN) || "{}");
+    } catch {
+        return {};
+    }
+}
+
+function cerrarSesion(){
+    if (!confirm("¿Desea cerrar sesión?")) return;
+
+    localStorage.removeItem(STORAGE_LOGIN);
+    localStorage.removeItem(STORAGE_DATA);
+    localStorage.removeItem(STORAGE_FILTERS);
+
+    data = [];
+
+    document.getElementById("loginUsuario").value = "";
+    document.getElementById("loginPassword").value = "";
+
+    const estado = document.getElementById("estado");
+    if (estado) estado.textContent = "Sesión cerrada.";
+
+    render([], 0, 0);
+    cargarSesion();
+}
+
 async function sincronizarDesdeApi(){
     const estado = document.getElementById("estado");
+    const sesion = obtenerSesion();
 
- const vendedor = document.getElementById('vendedorSync').value.trim();
-  if (!vendedor) {
-    alert("Debe indicar vendedor para sincronizar.");
-    estado.textContent = "Debe indicar vendedor.";
-    return;
-}
-    const desde =
-        document.getElementById('fechaDesde').value || "2024-07-01";
+    if (!sesion.token) {
+        alert("Debe iniciar sesión.");
+        cargarSesion();
+        return;
+    }
 
-    const hasta =
-        document.getElementById('fechaHasta').value ||
-        new Date().toISOString().substring(0,10);
+    const rol = (sesion.rol || "").toUpperCase();
+    const vendedorConsulta = document.getElementById("vendedorConsulta").value.trim();
+
+    if (rol === "ADMIN" && !vendedorConsulta) {
+        alert("Usuario ADMIN debe indicar vendedor a consultar.");
+        estado.textContent = "Debe indicar vendedor a consultar.";
+        return;
+    }
+
+    const desde = document.getElementById('fechaDesde').value || "2024-07-01";
+    const hasta = document.getElementById('fechaHasta').value || new Date().toISOString().substring(0,10);
 
     estado.textContent = "Sincronizando ventas desde SAP...";
 
     try {
+        let url =
+            `${API_SYNC}?token=${encodeURIComponent(sesion.token)}&desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`;
 
-        const url =
-            `${API_SYNC}?vendedor=${encodeURIComponent(vendedor)}&desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`;
+        if (rol === "ADMIN") {
+            url += `&vendedorConsulta=${encodeURIComponent(vendedorConsulta)}`;
+        }
 
         const resp = await fetch(url);
 
@@ -313,10 +457,7 @@ async function sincronizarDesdeApi(){
 
         data = await resp.json();
 
-        localStorage.setItem(
-            STORAGE_DATA,
-            JSON.stringify(data)
-        );
+        localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
 
         estado.textContent =
             "Base sincronizada desde SAP: " +
@@ -328,32 +469,34 @@ async function sincronizarDesdeApi(){
         buscar();
 
     } catch (e) {
-
-        estado.textContent =
-            "Error sincronizando desde SAP.";
-
-        alert(
-            "No se pudo sincronizar desde SAP.\n\n" +
-            e.message
-        );
+        estado.textContent = "Error sincronizando desde SAP.";
+        alert("No se pudo sincronizar desde SAP.\n\n" + e.message);
     }
 }
+
 function cargarBaseLocal(){
     const base = localStorage.getItem(STORAGE_DATA);
 
     if (!base) {
-        document.getElementById("estado").textContent = "Seleccione archivo JSON.";
+        const estado = document.getElementById("estado");
+        if (estado) estado.textContent = "Sin base local. Sincronice ventas desde SAP.";
         return;
     }
 
     try {
         data = JSON.parse(base);
-        document.getElementById("estado").textContent =
-            "Base local cargada: " + data.length.toLocaleString('es-CL') + " registros.";
+        const estado = document.getElementById("estado");
+        if (estado) {
+            estado.textContent =
+                "Base local cargada: " +
+                data.length.toLocaleString('es-CL') +
+                " registros.";
+        }
     } catch {
         data = [];
         localStorage.removeItem(STORAGE_DATA);
-        document.getElementById("estado").textContent = "Base local dañada. Cargue nuevamente el JSON.";
+        const estado = document.getElementById("estado");
+        if (estado) estado.textContent = "Base local dañada. Sincronice nuevamente.";
     }
 }
 
@@ -381,20 +524,21 @@ function borrarBase(){
     document.getElementById('cliente').value = '';
     document.getElementById('producto').value = '';
     document.getElementById('folio').value = '';
+    document.getElementById('vendedorConsulta').value = '';
 
     document.getElementById("estado").textContent = "Base local eliminada.";
     render([], 0, 0);
 }
 
 function guardarFiltros(){
-   const filtros = {
-    vendedorSync: document.getElementById('vendedorSync').value,
-    fechaDesde: document.getElementById('fechaDesde').value,
-    fechaHasta: document.getElementById('fechaHasta').value,
-    cliente: document.getElementById('cliente').value,
-    producto: document.getElementById('producto').value,
-    folio: document.getElementById('folio').value
-};
+    const filtros = {
+        vendedorConsulta: document.getElementById('vendedorConsulta').value,
+        fechaDesde: document.getElementById('fechaDesde').value,
+        fechaHasta: document.getElementById('fechaHasta').value,
+        cliente: document.getElementById('cliente').value,
+        producto: document.getElementById('producto').value,
+        folio: document.getElementById('folio').value
+    };
 
     try {
         localStorage.setItem(STORAGE_FILTERS, JSON.stringify(filtros));
@@ -412,8 +556,8 @@ function cargarFiltros(){
     try {
         const filtros = JSON.parse(guardado);
 
-        document.getElementById('vendedorSync').value =
-            filtros.vendedorSync || '';
+        document.getElementById('vendedorConsulta').value =
+            filtros.vendedorConsulta || '';
 
         document.getElementById('fechaDesde').value =
             filtros.fechaDesde || '';
@@ -469,39 +613,19 @@ function cumpleTexto(valor, busqueda){
 }
 
 function buscar(){
-
     guardarFiltros();
 
-    const desde =
-        document.getElementById('fechaDesde').value;
-
-    const hasta =
-        document.getElementById('fechaHasta').value;
-
-    const cliente =
-        document.getElementById('cliente').value;
-
-    const producto =
-        document.getElementById('producto').value;
-
-    const folio =
-        document.getElementById('folio').value;
+    const desde = document.getElementById('fechaDesde').value;
+    const hasta = document.getElementById('fechaHasta').value;
+    const cliente = document.getElementById('cliente').value;
+    const producto = document.getElementById('producto').value;
+    const folio = document.getElementById('folio').value;
 
     const filtrado = data.filter(x => {
-
-        const fecha =
-            (x.Fecha || x.fecha || '')
-            .toString()
-            .substring(0,10);
-
-        const cardName =
-            x.CardName || x.cardName || '';
-
-        const itemName =
-            x.ItemName || x.itemName || '';
-
-        const folioDoc =
-            x.Folio || x.folio || '';
+        const fecha = (x.Fecha || x.fecha || '').toString().substring(0,10);
+        const cardName = x.CardName || x.cardName || '';
+        const itemName = x.ItemName || x.itemName || '';
+        const folioDoc = x.Folio || x.folio || '';
 
         return (!desde || fecha >= desde)
             && (!hasta || fecha <= hasta)
@@ -510,17 +634,11 @@ function buscar(){
             && cumpleTexto(folioDoc, folio);
     });
 
-    render(
-        filtrado.slice(0,300),
-        filtrado.length,
-        calcularTotal(filtrado)
-    );
+    render(filtrado.slice(0,300), filtrado.length, calcularTotal(filtrado));
 
     document.getElementById("estado").textContent =
         data.length > 0
-        ? "Resultados: " +
-          filtrado.length.toLocaleString('es-CL') +
-          ". Mostrando máximo 300."
+        ? "Resultados: " + filtrado.length.toLocaleString('es-CL') + ". Mostrando máximo 300."
         : "Sin datos sincronizados.";
 }
 
@@ -594,6 +712,7 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
         ? "Registros encontrados: " + formato(totalEncontrados) + ". Mostrando: " + formato(lista.length) + "."
         : "Sin resultados.";
 }
+
 function esc(str){
     return (str || "")
         .toString()
@@ -625,7 +744,7 @@ async function copiarLink(url){
         await navigator.clipboard.writeText(url);
         alert("Link copiado. Abra una pestaña del navegador y péguelo para visualizar el PDF.");
     } catch {
-        alert("No se pudo copiar automáticamente. Mantenga presionado el link copiado o revise el dato UrlPdf.");
+        alert("No se pudo copiar automáticamente. Revise el dato UrlPdf.");
     }
 }
 
