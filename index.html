@@ -48,7 +48,7 @@ label {
   font-size:12px;
 }
 
-input, button {
+input, button, select {
   width:100%;
   padding:8px;
   margin-top:4px;
@@ -463,14 +463,14 @@ async function sincronizarDesdeApi(){
         return;
     }
 
-    const rol = (sesion.rol || "").toUpperCase();
-    const vendedorConsulta = document.getElementById("vendedorConsulta").value.trim();
+const rol = (sesion.rol || "").toUpperCase();
+const slpCodeConsulta = document.getElementById("slpCodeConsulta").value;
 
-    if (rol === "ADMIN" && !vendedorConsulta) {
-        alert("Usuario ADMIN debe indicar vendedor a consultar.");
-        estado.textContent = "Debe indicar vendedor a consultar.";
-        return;
-    }
+if (rol === "ADMIN" && !slpCodeConsulta) {
+    alert("Usuario ADMIN debe seleccionar vendedor a consultar.");
+    estado.textContent = "Debe seleccionar vendedor a consultar.";
+    return;
+}
 
     const desde = document.getElementById('fechaDesde').value || "2024-07-01";
     const hasta = document.getElementById('fechaHasta').value || new Date().toISOString().substring(0,10);
@@ -481,9 +481,9 @@ async function sincronizarDesdeApi(){
         let url =
             `${API_SYNC}?token=${encodeURIComponent(sesion.token)}&desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`;
 
-        if (rol === "ADMIN") {
-            url += `&vendedorConsulta=${encodeURIComponent(vendedorConsulta)}`;
-        }
+if (rol === "ADMIN") {
+    url += `&slpCodeConsulta=${encodeURIComponent(slpCodeConsulta)}`;
+}
 
         const resp = await fetch(url);
 
@@ -549,7 +549,7 @@ function borrarBase(){
     document.getElementById('cliente').value = '';
     document.getElementById('producto').value = '';
     document.getElementById('folio').value = '';
-    document.getElementById('vendedorConsulta').value = '';
+  document.getElementById('slpCodeConsulta').value = '';
 
     document.getElementById("estado").textContent = "Base local eliminada.";
     render([], 0, 0);
@@ -557,7 +557,7 @@ function borrarBase(){
 
 function guardarFiltros(){
     const filtros = {
-        vendedorConsulta: document.getElementById('vendedorConsulta').value,
+   slpCodeConsulta: document.getElementById('slpCodeConsulta').value,
         fechaDesde: document.getElementById('fechaDesde').value,
         fechaHasta: document.getElementById('fechaHasta').value,
         cliente: document.getElementById('cliente').value,
@@ -581,8 +581,8 @@ function cargarFiltros(){
     try {
         const filtros = JSON.parse(guardado);
 
-        document.getElementById('vendedorConsulta').value =
-            filtros.vendedorConsulta || '';
+  document.getElementById('slpCodeConsulta').value =
+    filtros.slpCodeConsulta || '';
 
         document.getElementById('fechaDesde').value =
             filtros.fechaDesde || '';
