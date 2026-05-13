@@ -231,11 +231,12 @@ button {
       <b>Rol:</b> <span id="rolActual"></span>
     </div>
 
-    <div id="adminBox" class="oculto">
-      <label>Vendedor a consultar</label>
-      <input type="text" id="vendedorConsulta" placeholder="Ejemplo: Fabiola, Zamora, Juan">
-    </div>
-
+   <div id="adminBox" class="oculto">
+  <label>Vendedor a consultar</label>
+  <select id="slpCodeConsulta">
+    <option value="">Seleccione vendedor</option>
+  </select>
+</div>
     <div class="botones">
       <button onclick="sincronizarDesdeApi()">Sincronizar SAP</button>
       <button class="danger" onclick="borrarBase()">Borrar base</button>
@@ -289,13 +290,14 @@ const STORAGE_LOGIN = "ventas_offline_login_v1";
 
 const API_LOGIN = "https://api.cotaco.cl/api/login";
 const API_SYNC = "https://api.cotaco.cl/api/ventas-historicas-sync";
+  const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 
 window.addEventListener("load", function(){
     cargarSesion();
     cargarBaseLocal();
     cargarFiltros();
 
-    ["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "vendedorConsulta"].forEach(id => {
+["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener("input", guardarFiltros);
     });
@@ -381,12 +383,13 @@ function aplicarSesion(sesion){
 
     const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
 
-    if (rol === "ADMIN") {
-        document.getElementById("adminBox").classList.remove("oculto");
-    } else {
-        document.getElementById("adminBox").classList.add("oculto");
-        document.getElementById("vendedorConsulta").value = "";
-    }
+if (rol === "ADMIN") {
+    document.getElementById("adminBox").classList.remove("oculto");
+    cargarVendedoresAdmin();
+} else {
+    document.getElementById("adminBox").classList.add("oculto");
+    document.getElementById("slpCodeConsulta").value = "";
+}
 }
 
 function obtenerSesion(){
@@ -394,6 +397,40 @@ function obtenerSesion(){
         return JSON.parse(localStorage.getItem(STORAGE_LOGIN) || "{}");
     } catch {
         return {};
+    }
+}
+
+async function cargarVendedoresAdmin(){
+    const sesion = obtenerSesion();
+    const combo = document.getElementById("slpCodeConsulta");
+
+    if (!sesion.token || !combo) return;
+
+    combo.innerHTML = '<option value="">Cargando vendedores...</option>';
+
+    try {
+        const resp = await fetch(`${API_VENDEDORES}?token=${encodeURIComponent(sesion.token)}`);
+
+        if (!resp.ok) {
+            throw new Error("HTTP " + resp.status);
+        }
+
+        const vendedores = await resp.json();
+
+        combo.innerHTML = '<option value="">Seleccione vendedor</option>';
+
+        vendedores.forEach(v => {
+            const opt = document.createElement("option");
+            opt.value = v.slpCode;
+            opt.textContent = v.slpName;
+            combo.appendChild(opt);
+        });
+
+        cargarFiltros();
+
+    } catch (e) {
+        combo.innerHTML = '<option value="">Error cargando vendedores</option>';
+        alert("No se pudo cargar lista de vendedores.\n\n" + e.message);
     }
 }
 
