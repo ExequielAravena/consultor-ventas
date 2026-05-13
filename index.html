@@ -238,7 +238,6 @@ button {
 
     <div class="botones">
       <button onclick="sincronizarDesdeApi()">Sincronizar SAP</button>
-      <button class="secundario" onclick="recargarBase()">Recargar base</button>
       <button class="danger" onclick="borrarBase()">Borrar base</button>
     </div>
 
@@ -497,17 +496,6 @@ function cargarBaseLocal(){
         localStorage.removeItem(STORAGE_DATA);
         const estado = document.getElementById("estado");
         if (estado) estado.textContent = "Base local dañada. Sincronice nuevamente.";
-    }
-}
-
-function recargarBase(){
-    cargarBaseLocal();
-
-    if (data.length > 0) {
-        if (!document.getElementById('fechaDesde').value || !document.getElementById('fechaHasta').value) {
-            aplicarFechasBase();
-        }
-        buscar();
     }
 }
 
