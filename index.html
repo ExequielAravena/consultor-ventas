@@ -4,10 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Consultor Offline Ventas</title>
+<link rel="manifest" href="/consultor-ventas/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="/consultor-ventas/icon-192.png">
+<link rel="apple-touch-icon" href="/consultor-ventas/icon-192.png">
 
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="data:,">
 <meta name="theme-color" content="#0d6efd">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 
 <style>
 * { box-sizing:border-box; }
@@ -1034,12 +1038,12 @@ function formato(n){
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
-navigator.serviceWorker.register("/consultor-ventas/sw.js")
-      .then(function () {
-        console.log("Service Worker registrado correctamente.");
+    navigator.serviceWorker.register("/consultor-ventas/sw.js")
+      .then(function (registration) {
+        console.log("Service Worker OK:", registration.scope);
       })
       .catch(function (error) {
-        console.log("Error registrando Service Worker:", error);
+        console.error("Error Service Worker:", error);
       });
   });
 }
