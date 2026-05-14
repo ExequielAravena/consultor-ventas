@@ -326,6 +326,7 @@ window.addEventListener("load", function(){
     cargarSesion();
     cargarBaseLocal();
     cargarFiltros();
+    aplicarFechasInicialesSiCorresponde();
 
 ["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta"].forEach(id => {
         const el = document.getElementById(id);
@@ -691,14 +692,14 @@ async function sincronizarDesdeApi(){
 const rol = (sesion.rol || "").toUpperCase();
 const slpCodeConsulta = document.getElementById("slpCodeConsulta").value;
 
-if (rol === "ADMIN" && !slpCodeConsulta) {
+if ((rol === "ADMIN" || rol === "SUPERADMIN") && !slpCodeConsulta) {
     alert("Usuario ADMIN debe seleccionar vendedor a consultar.");
     estado.textContent = "Debe seleccionar vendedor a consultar.";
     return;
 }
 
-    const desde = document.getElementById('fechaDesde').value || "2024-07-01";
-    const hasta = document.getElementById('fechaHasta').value || new Date().toISOString().substring(0,10);
+    const desde = document.getElementById('fechaDesde').value || "2024-01-01";
+    const hasta = document.getElementById('fechaHasta').value || hoyISO();
 
     estado.textContent = "Sincronizando ventas desde SAP...";
 
@@ -706,7 +707,7 @@ if (rol === "ADMIN" && !slpCodeConsulta) {
         let url =
             `${API_SYNC}?token=${encodeURIComponent(sesion.token)}&desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`;
 
-if (rol === "ADMIN") {
+if (rol === "ADMIN" || rol === "SUPERADMIN") {
     url += `&slpCodeConsulta=${encodeURIComponent(slpCodeConsulta)}`;
 }
 console.log("URL sync:", url);
@@ -830,6 +831,29 @@ function cargarFiltros(){
     } catch {
         console.log("No se pudieron cargar filtros.");
     }
+}
+
+function hoyISO(){
+    return new Date().toISOString().substring(0,10);
+}
+
+function aplicarFechasInicialesSiCorresponde(){
+    const desdeEl = document.getElementById('fechaDesde');
+    const hastaEl = document.getElementById('fechaHasta');
+
+    if (!desdeEl || !hastaEl) return;
+
+    if (data && data.length > 0) {
+        if (!desdeEl.value || !hastaEl.value) {
+            aplicarFechasBase();
+        }
+        return;
+    }
+
+    if (!desdeEl.value) desdeEl.value = "2024-01-01";
+    if (!hastaEl.value) hastaEl.value = hoyISO();
+
+    guardarFiltros();
 }
 
 function aplicarFechasBase(){
