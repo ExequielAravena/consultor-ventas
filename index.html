@@ -189,6 +189,64 @@ button {
   line-height:1.4;
 }
 
+
+.menu-modulos {
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+
+.menu-modulos button {
+  flex:1;
+}
+
+.modulo-activo {
+  background:#0d6efd;
+  color:white;
+}
+
+.stock-card {
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  padding:9px;
+}
+
+.stock-codigo {
+  font-size:14px;
+  font-weight:bold;
+  color:#0d6efd;
+  margin-bottom:3px;
+}
+
+.stock-producto {
+  font-size:13px;
+  font-weight:bold;
+  line-height:1.25;
+  margin-bottom:6px;
+}
+
+.stock-datos {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  font-size:12px;
+  line-height:1.35;
+}
+
+.stock-disponible {
+  font-weight:bold;
+  color:#198754;
+}
+
+.stock-precios {
+  margin-top:6px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  font-size:12px;
+}
+
 @media (min-width: 900px) {
   body { padding:12px; }
 
@@ -258,6 +316,11 @@ button {
       <b>Rol:</b> <span id="rolActual"></span>
     </div>
 
+    <div class="menu-modulos">
+      <button id="btnModuloVentas" class="modulo-activo" onclick="mostrarModulo('ventas')">Ventas</button>
+      <button id="btnModuloStock" class="secundario" onclick="mostrarModulo('stock')">Stock</button>
+    </div>
+
    <div id="adminBox" class="oculto">
   <label>Vendedor a consultar</label>
   <select id="slpCodeConsulta">
@@ -280,6 +343,8 @@ button {
 
     <div id="estado" class="status">Sin base local. Sincronice ventas desde SAP.</div>
   </div>
+
+  <div id="ventasModulo">
 
   <div class="card">
     <label>Fecha desde</label>
@@ -311,6 +376,24 @@ button {
 
   <div id="lista" class="lista"></div>
 
+  </div>
+
+  <div id="stockModulo" class="oculto">
+    <div class="card">
+      <label>Buscar stock por código o nombre</label>
+      <input type="text" id="stockBuscar" placeholder="Ejemplo: 5WRO4X40 o nombre producto">
+
+      <div class="botones">
+        <button onclick="consultarStock()">Buscar stock</button>
+        <button class="secundario" onclick="limpiarStock()">Limpiar</button>
+      </div>
+
+      <div id="stockEstado" class="status">Ingrese código o nombre de producto.</div>
+    </div>
+
+    <div id="stockLista" class="lista"></div>
+  </div>
+
 </div>
 
 <script>
@@ -325,6 +408,7 @@ const API_SYNC = "https://api.cotaco.cl/api/ventas-historicas-sync";
 const API_CAMBIAR_PASSWORD = "https://api.cotaco.cl/api/cambiar-password";
 const API_ADMIN_RESET_PASSWORD = "https://api.cotaco.cl/api/admin/reset-password";
 const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
+const API_STOCK = "https://api.cotaco.cl/api/bot/stock";
 
 window.addEventListener("load", function(){
     cargarSesion();
@@ -336,6 +420,13 @@ window.addEventListener("load", function(){
         const el = document.getElementById(id);
         if (el) el.addEventListener("input", guardarFiltros);
     });
+
+    const stockBuscar = document.getElementById("stockBuscar");
+    if (stockBuscar) {
+        stockBuscar.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") consultarStock();
+        });
+    }
 
     if (data.length > 0) {
         buscar();
@@ -558,6 +649,130 @@ if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
         if (estado) estado.textContent = "Error reseteando password.";
         alert("No se pudo resetear password.\n\n" + e.message);
     }
+}
+
+
+function mostrarModulo(modulo){
+    const ventasModulo = document.getElementById("ventasModulo");
+    const stockModulo = document.getElementById("stockModulo");
+    const btnVentas = document.getElementById("btnModuloVentas");
+    const btnStock = document.getElementById("btnModuloStock");
+
+    if (!ventasModulo || !stockModulo) return;
+
+    if (modulo === "stock") {
+        ventasModulo.classList.add("oculto");
+        stockModulo.classList.remove("oculto");
+
+        if (btnVentas) {
+            btnVentas.classList.remove("modulo-activo");
+            btnVentas.classList.add("secundario");
+        }
+
+        if (btnStock) {
+            btnStock.classList.add("modulo-activo");
+            btnStock.classList.remove("secundario");
+        }
+
+        const input = document.getElementById("stockBuscar");
+        if (input) input.focus();
+    } else {
+        stockModulo.classList.add("oculto");
+        ventasModulo.classList.remove("oculto");
+
+        if (btnStock) {
+            btnStock.classList.remove("modulo-activo");
+            btnStock.classList.add("secundario");
+        }
+
+        if (btnVentas) {
+            btnVentas.classList.add("modulo-activo");
+            btnVentas.classList.remove("secundario");
+        }
+    }
+}
+
+async function consultarStock(){
+    const buscar = document.getElementById("stockBuscar").value.trim();
+    const estado = document.getElementById("stockEstado");
+    const lista = document.getElementById("stockLista");
+
+    if (!buscar) {
+        estado.textContent = "Debe ingresar código o nombre de producto.";
+        lista.innerHTML = "";
+        return;
+    }
+
+    estado.textContent = "Consultando stock en SAP...";
+    lista.innerHTML = "";
+
+    try {
+        const resp = await fetch(API_STOCK + "?buscar=" + encodeURIComponent(buscar));
+
+        if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(txt || "No se pudo consultar stock.");
+        }
+
+        const datos = await resp.json();
+
+        if (!datos || datos.length === 0) {
+            estado.textContent = "Sin resultados para: " + buscar;
+            lista.innerHTML = '<div class="stock-card">Sin resultados.</div>';
+            return;
+        }
+
+        estado.textContent = "Resultados encontrados: " + datos.length.toLocaleString("es-CL") + ".";
+
+        lista.innerHTML = datos.map(x => {
+            const codigo = x.Codigo ?? x.codigo ?? "";
+            const producto = x.Producto ?? x.producto ?? "";
+            const bodega = x.Bodega ?? x.bodega ?? "";
+            const disponible = x.Disponible ?? x.disponible ?? 0;
+            const l1 = x.L1 ?? x.l1 ?? 0;
+            const l2 = x.L2 ?? x.l2 ?? 0;
+            const l3 = x.L3 ?? x.l3 ?? 0;
+            const com1 = x.Com1 ?? x.com1 ?? 0;
+            const com2 = x.Com2 ?? x.com2 ?? 0;
+            const com3 = x.Com3 ?? x.com3 ?? 0;
+
+            return `
+              <div class="stock-card">
+                <div class="stock-codigo">${esc(codigo)}</div>
+                <div class="stock-producto">${esc(producto)}</div>
+
+                <div class="stock-datos">
+                  <div><b>Bodega:</b> ${esc(bodega)}</div>
+                  <div><b>Disponible:</b> <span class="stock-disponible">${formato(disponible)}</span></div>
+                </div>
+
+                <div class="stock-precios">
+                  <div><b>L1:</b> $${formato(l1)}</div>
+                  <div><b>L2:</b> $${formato(l2)}</div>
+                  <div><b>L3:</b> $${formato(l3)}</div>
+                </div>
+
+                <div class="stock-precios">
+                  <div><b>Com1:</b> ${formato(com1)}</div>
+                  <div><b>Com2:</b> ${formato(com2)}</div>
+                  <div><b>Com3:</b> ${formato(com3)}</div>
+                </div>
+              </div>
+            `;
+        }).join("");
+
+    } catch (e) {
+        estado.textContent = "Error consultando stock.";
+        lista.innerHTML = "";
+        alert("No se pudo consultar stock.\n\n" + e.message);
+    }
+}
+
+function limpiarStock(){
+    document.getElementById("stockBuscar").value = "";
+    document.getElementById("stockEstado").textContent = "Ingrese código o nombre de producto.";
+    document.getElementById("stockLista").innerHTML = "";
+    document.getElementById("stockBuscar").focus();
 }
 
 
