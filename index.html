@@ -67,6 +67,7 @@ button {
 
 .secundario { background:#6c757d; }
 .danger { background:#dc3545; }
+.warning { background:#ffc107; color:#111; }
 
 .botones {
   display:flex;
@@ -222,6 +223,28 @@ button {
   <div id="loginEstado" class="status">Ingrese usuario y password.</div>
 </div>
 
+<div id="cambioPasswordBox" class="card oculto">
+  <h3 style="margin:0 0 8px 0;color:#0d6efd;font-size:16px;">Cambiar contraseña</h3>
+
+  <div id="cambioPasswordAviso" class="status">Ingrese su contraseña actual y una nueva contraseña.</div>
+
+  <label>Contraseña actual</label>
+  <input type="password" id="passwordActual" placeholder="Contraseña actual">
+
+  <label>Nueva contraseña</label>
+  <input type="password" id="passwordNueva" placeholder="Mínimo 8 caracteres, mayúscula, minúscula y número">
+
+  <label>Confirmar nueva contraseña</label>
+  <input type="password" id="passwordNueva2" placeholder="Repita nueva contraseña">
+
+  <div class="botones">
+    <button onclick="guardarNuevaPassword()">Guardar contraseña</button>
+    <button id="btnCancelarCambioPassword" class="secundario" onclick="cancelarCambioPassword()">Cancelar</button>
+  </div>
+
+  <div id="cambioPasswordEstado" class="status"></div>
+</div>
+
 <div id="appBox" class="oculto">
 
   <div class="card">
@@ -243,6 +266,7 @@ button {
     </div>
 
     <div class="botones">
+      <button class="secundario" onclick="mostrarCambioPassword(false)">Cambiar contraseña</button>
       <button class="secundario" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
 
@@ -290,6 +314,7 @@ const STORAGE_LOGIN = "ventas_offline_login_v1";
 
 const API_LOGIN = "https://api.cotaco.cl/api/login";
 const API_SYNC = "https://api.cotaco.cl/api/ventas-historicas-sync";
+const API_CAMBIAR_PASSWORD = "https://api.cotaco.cl/api/cambiar-password";
   const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 
 window.addEventListener("load", function(){
@@ -354,6 +379,7 @@ function cargarSesion(){
 
     if (!guardado) {
         document.getElementById("loginBox").classList.remove("oculto");
+        document.getElementById("cambioPasswordBox").classList.add("oculto");
         document.getElementById("appBox").classList.add("oculto");
         return;
     }
@@ -364,12 +390,23 @@ function cargarSesion(){
     } catch {
         localStorage.removeItem(STORAGE_LOGIN);
         document.getElementById("loginBox").classList.remove("oculto");
+        document.getElementById("cambioPasswordBox").classList.add("oculto");
         document.getElementById("appBox").classList.add("oculto");
     }
 }
 
 function aplicarSesion(sesion){
+    const passwordTemporal = ((sesion.passwordTemporal || sesion.PasswordTemporal || "N") + "").toUpperCase();
+
     document.getElementById("loginBox").classList.add("oculto");
+
+    if (passwordTemporal === "Y") {
+        document.getElementById("appBox").classList.add("oculto");
+        mostrarCambioPassword(true);
+        return;
+    }
+
+    document.getElementById("cambioPasswordBox").classList.add("oculto");
     document.getElementById("appBox").classList.remove("oculto");
 
     document.getElementById("usuarioActual").textContent =
@@ -434,9 +471,107 @@ async function cargarVendedoresAdmin(){
     }
 }
 
-function cerrarSesion(){
-    if (!confirm("¿Desea cerrar sesión?")) return;
 
+function mostrarCambioPassword(forzado){
+    document.getElementById("loginBox").classList.add("oculto");
+    document.getElementById("appBox").classList.add("oculto");
+    document.getElementById("cambioPasswordBox").classList.remove("oculto");
+
+    document.getElementById("passwordActual").value = "";
+    document.getElementById("passwordNueva").value = "";
+    document.getElementById("passwordNueva2").value = "";
+
+    document.getElementById("cambioPasswordAviso").textContent =
+        forzado
+        ? "Debe cambiar su contraseña temporal antes de continuar."
+        : "Ingrese su contraseña actual y una nueva contraseña.";
+
+    document.getElementById("btnCancelarCambioPassword").style.display =
+        forzado ? "none" : "block";
+
+    document.getElementById("cambioPasswordEstado").textContent = "";
+}
+
+function cancelarCambioPassword(){
+    const sesion = obtenerSesion();
+    document.getElementById("cambioPasswordBox").classList.add("oculto");
+
+    if (sesion && sesion.token) {
+        document.getElementById("appBox").classList.remove("oculto");
+    } else {
+        document.getElementById("loginBox").classList.remove("oculto");
+    }
+}
+
+async function guardarNuevaPassword(){
+    const sesion = obtenerSesion();
+    const estado = document.getElementById("cambioPasswordEstado");
+
+    if (!sesion.token) {
+        alert("Sesión no válida. Debe iniciar sesión nuevamente.");
+        cerrarSesionSinConfirmar();
+        return;
+    }
+
+    const actual = document.getElementById("passwordActual").value.trim();
+    const nueva = document.getElementById("passwordNueva").value.trim();
+    const nueva2 = document.getElementById("passwordNueva2").value.trim();
+
+    if (!actual || !nueva || !nueva2) {
+        estado.textContent = "Debe completar todos los campos.";
+        return;
+    }
+
+    if (nueva !== nueva2) {
+        estado.textContent = "La nueva contraseña y la confirmación no coinciden.";
+        return;
+    }
+
+    if (nueva.length < 8) {
+        estado.textContent = "La nueva contraseña debe tener al menos 8 caracteres.";
+        return;
+    }
+
+    if (!/[A-ZÁÉÍÓÚÑ]/.test(nueva) || !/[a-záéíóúñ]/.test(nueva) || !/[0-9]/.test(nueva)) {
+        estado.textContent = "Debe incluir mayúscula, minúscula y número.";
+        return;
+    }
+
+    estado.textContent = "Actualizando contraseña...";
+
+    try {
+        const resp = await fetch(API_CAMBIAR_PASSWORD, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                token: sesion.token,
+                passwordActual: actual,
+                passwordNueva: nueva
+            })
+        });
+
+        if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(txt || "No se pudo cambiar la contraseña.");
+        }
+
+        sesion.passwordTemporal = "N";
+        sesion.PasswordTemporal = "N";
+        localStorage.setItem(STORAGE_LOGIN, JSON.stringify(sesion));
+
+        estado.textContent = "Contraseña actualizada correctamente.";
+
+        alert("Contraseña actualizada correctamente.");
+
+        aplicarSesion(sesion);
+
+    } catch (e) {
+        estado.textContent = "Error cambiando contraseña.";
+        alert(e.message);
+    }
+}
+
+function cerrarSesionSinConfirmar(){
     localStorage.removeItem(STORAGE_LOGIN);
     localStorage.removeItem(STORAGE_DATA);
     localStorage.removeItem(STORAGE_FILTERS);
@@ -446,11 +581,17 @@ function cerrarSesion(){
     document.getElementById("loginUsuario").value = "";
     document.getElementById("loginPassword").value = "";
 
+    render([], 0, 0);
+    cargarSesion();
+}
+
+function cerrarSesion(){
+    if (!confirm("¿Desea cerrar sesión?")) return;
+
     const estado = document.getElementById("estado");
     if (estado) estado.textContent = "Sesión cerrada.";
 
-    render([], 0, 0);
-    cargarSesion();
+    cerrarSesionSinConfirmar();
 }
 
 async function sincronizarDesdeApi(){
