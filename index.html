@@ -509,14 +509,14 @@ async function resetPasswordAdmin(){
 
     const claveTemporal = "Cotaco2026";
 
-    if (!confirm("¿Resetear password del vendedor?
+    const mensajeConfirmacion =
+        "¿Resetear password del vendedor?\n\n" +
+        "Vendedor: " + vendedorReset + "\n" +
+        "SlpCode: " + slpCodeReset + "\n\n" +
+        "Se asignará clave temporal: " + claveTemporal + "\n\n" +
+        "El usuario deberá cambiarla al ingresar.";
 
-Vendedor: " + vendedorReset + "
-SlpCode: " + slpCodeReset + "
-
-Se asignará clave temporal: " + claveTemporal + "
-
-El usuario deberá cambiarla al ingresar.")) {
+    if (!confirm(mensajeConfirmacion)) {
         return;
     }
 
