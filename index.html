@@ -698,7 +698,7 @@ if ((rol === "ADMIN" || rol === "SUPERADMIN") && !slpCodeConsulta) {
     return;
 }
 
-    const desde = document.getElementById('fechaDesde').value || "2024-01-01";
+    const desde = document.getElementById('fechaDesde').value || "2024-07-01";
     const hasta = document.getElementById('fechaHasta').value || hoyISO();
 
     estado.textContent = "Sincronizando ventas desde SAP...";
@@ -850,7 +850,7 @@ function aplicarFechasInicialesSiCorresponde(){
         return;
     }
 
-    if (!desdeEl.value) desdeEl.value = "2024-01-01";
+    if (!desdeEl.value) desdeEl.value = "2024-07-01";
     if (!hastaEl.value) hastaEl.value = hoyISO();
 
     guardarFiltros();
