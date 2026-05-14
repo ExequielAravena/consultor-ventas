@@ -488,9 +488,10 @@ async function resetPasswordAdmin(){
         return;
     }
 
-    if (rol !== "ADMIN") {
-        alert("Solo un usuario ADMIN puede resetear passwords.");
-        return;
+if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
+    alert("Solo un usuario ADMIN o SUPERADMIN puede resetear passwords.");
+    return;
+
     }
 
     const combo = document.getElementById("slpCodeConsulta");
