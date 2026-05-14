@@ -1034,7 +1034,7 @@ function formato(n){
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
-    navigator.serviceWorker.register("sw.js")
+navigator.serviceWorker.register("/consultor-ventas/sw.js")
       .then(function () {
         console.log("Service Worker registrado correctamente.");
       })
