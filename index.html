@@ -260,6 +260,9 @@ button {
     <option value="">Seleccione vendedor</option>
   </select>
 
+  <label>Usuario API a resetear</label>
+  <input type="text" id="usuarioReset" placeholder="Ejemplo: aaguillon">
+
   <div class="botones">
     <button class="warning" onclick="resetPasswordAdmin()">Reset password vendedor</button>
   </div>
@@ -319,7 +322,7 @@ const STORAGE_LOGIN = "ventas_offline_login_v1";
 const API_LOGIN = "https://api.cotaco.cl/api/login";
 const API_SYNC = "https://api.cotaco.cl/api/ventas-historicas-sync";
 const API_CAMBIAR_PASSWORD = "https://api.cotaco.cl/api/cambiar-password";
-const API_RESET_PASSWORD = "https://api.cotaco.cl/api/admin/reset-password";
+const API_ADMIN_RESET_PASSWORD = "https://api.cotaco.cl/api/admin/reset-password";
 const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 
 window.addEventListener("load", function(){
@@ -474,56 +477,59 @@ async function cargarVendedoresAdmin(){
         combo.innerHTML = '<option value="">Error cargando vendedores</option>';
         alert("No se pudo cargar lista de vendedores.\n\n" + e.message);
     }
-
 }
+
 
 async function resetPasswordAdmin(){
     const sesion = obtenerSesion();
-    const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
-    const combo = document.getElementById("slpCodeConsulta");
     const estado = document.getElementById("estado");
+    const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
 
     if (!sesion.token) {
-        alert("Debe iniciar sesión nuevamente.");
+        alert("Debe iniciar sesión como ADMIN.");
         cargarSesion();
         return;
     }
 
     if (rol !== "ADMIN") {
-        alert("Solo usuario ADMIN puede resetear contraseñas.");
+        alert("Solo un usuario ADMIN puede resetear passwords.");
         return;
     }
 
-    if (!combo || !combo.value) {
-        alert("Debe seleccionar vendedor a resetear.");
+    const combo = document.getElementById("slpCodeConsulta");
+    const slpCodeReset = combo ? combo.value : "";
+    const vendedorReset = combo && combo.selectedIndex >= 0
+        ? combo.options[combo.selectedIndex].textContent
+        : "";
+
+    if (!slpCodeReset) {
+        alert("Debe seleccionar un vendedor para resetear password.");
         return;
     }
 
-    const opt = combo.options[combo.selectedIndex];
-    const slpCode = combo.value;
-    const slpName = opt ? opt.textContent : "";
-    const passwordTemporal = "Cotaco2026";
+    const claveTemporal = "Cotaco2026";
 
-    const confirma = confirm(
-        "¿Resetear password del vendedor?\n\n" +
-        "Vendedor: " + slpName + "\n" +
-        "SlpCode: " + slpCode + "\n\n" +
-        "Se asignará clave temporal:\n" + passwordTemporal + "\n\n" +
-        "El usuario deberá cambiarla al ingresar."
-    );
+    if (!confirm("¿Resetear password del vendedor?
 
-    if (!confirma) return;
+Vendedor: " + vendedorReset + "
+SlpCode: " + slpCodeReset + "
 
-    if (estado) estado.textContent = "Reseteando password...";
+Se asignará clave temporal: " + claveTemporal + "
+
+El usuario deberá cambiarla al ingresar.")) {
+        return;
+    }
+
+    if (estado) estado.textContent = "Reseteando password de " + vendedorReset + "...";
 
     try {
-        const resp = await fetch(API_RESET_PASSWORD, {
+        const resp = await fetch(API_ADMIN_RESET_PASSWORD, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 token: sesion.token,
-                slpCode: Number(slpCode),
-                passwordTemporal: passwordTemporal
+                slpCode: Number(slpCodeReset),
+                passwordTemporal: claveTemporal
             })
         });
 
@@ -532,136 +538,24 @@ async function resetPasswordAdmin(){
             throw new Error(txt || "No se pudo resetear password.");
         }
 
-        const r = await resp.json();
+        await resp.json();
 
         if (estado) {
-            estado.textContent = "Password reseteada. Clave temporal: " + passwordTemporal;
+            estado.textContent = "Password reseteado para " + vendedorReset + ". Clave temporal: " + claveTemporal;
         }
 
-        alert(
-            "Password reseteada correctamente.\n\n" +
-            "Vendedor: " + slpName + "\n" +
-            "Clave temporal: " + passwordTemporal + "\n\n" +
-            "Debe cambiarla al ingresar."
-        );
+        alert("Password reseteado correctamente.
+
+Vendedor: " + vendedorReset + "
+Clave temporal: " + claveTemporal + "
+El usuario deberá cambiarla al ingresar.");
 
     } catch (e) {
         if (estado) estado.textContent = "Error reseteando password.";
-        alert("No se pudo resetear password.\n\n" + e.message);
+        alert("No se pudo resetear password.
+
+" + e.message);
     }
-}
-
-function mostrarCambioPassword(forzado){
-    document.getElementById("loginBox").classList.add("oculto");
-    document.getElementById("appBox").classList.add("oculto");
-    document.getElementById("cambioPasswordBox").classList.remove("oculto");
-
-    document.getElementById("passwordActual").value = "";
-    document.getElementById("passwordNueva").value = "";
-    document.getElementById("passwordNueva2").value = "";
-
-    document.getElementById("cambioPasswordAviso").textContent =
-        forzado
-        ? "Debe cambiar su contraseña temporal antes de continuar."
-        : "Ingrese su contraseña actual y una nueva contraseña.";
-
-    document.getElementById("btnCancelarCambioPassword").style.display =
-        forzado ? "none" : "block";
-
-    document.getElementById("cambioPasswordEstado").textContent = "";
-}
-
-function cancelarCambioPassword(){
-    const sesion = obtenerSesion();
-    document.getElementById("cambioPasswordBox").classList.add("oculto");
-
-    if (sesion && sesion.token) {
-        document.getElementById("appBox").classList.remove("oculto");
-    } else {
-        document.getElementById("loginBox").classList.remove("oculto");
-    }
-}
-
-async function guardarNuevaPassword(){
-    const sesion = obtenerSesion();
-    const estado = document.getElementById("cambioPasswordEstado");
-
-    if (!sesion.token) {
-        alert("Sesión no válida. Debe iniciar sesión nuevamente.");
-        cerrarSesionSinConfirmar();
-        return;
-    }
-
-    const actual = document.getElementById("passwordActual").value.trim();
-    const nueva = document.getElementById("passwordNueva").value.trim();
-    const nueva2 = document.getElementById("passwordNueva2").value.trim();
-
-    if (!actual || !nueva || !nueva2) {
-        estado.textContent = "Debe completar todos los campos.";
-        return;
-    }
-
-    if (nueva !== nueva2) {
-        estado.textContent = "La nueva contraseña y la confirmación no coinciden.";
-        return;
-    }
-
-    if (nueva.length < 8) {
-        estado.textContent = "La nueva contraseña debe tener al menos 8 caracteres.";
-        return;
-    }
-
-    if (!/[A-ZÁÉÍÓÚÑ]/.test(nueva) || !/[a-záéíóúñ]/.test(nueva) || !/[0-9]/.test(nueva)) {
-        estado.textContent = "Debe incluir mayúscula, minúscula y número.";
-        return;
-    }
-
-    estado.textContent = "Actualizando contraseña...";
-
-    try {
-        const resp = await fetch(API_CAMBIAR_PASSWORD, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                token: sesion.token,
-                passwordActual: actual,
-                passwordNueva: nueva
-            })
-        });
-
-        if (!resp.ok) {
-            const txt = await resp.text();
-            throw new Error(txt || "No se pudo cambiar la contraseña.");
-        }
-
-        sesion.passwordTemporal = "N";
-        sesion.PasswordTemporal = "N";
-        localStorage.setItem(STORAGE_LOGIN, JSON.stringify(sesion));
-
-        estado.textContent = "Contraseña actualizada correctamente.";
-
-        alert("Contraseña actualizada correctamente.");
-
-        aplicarSesion(sesion);
-
-    } catch (e) {
-        estado.textContent = "Error cambiando contraseña.";
-        alert(e.message);
-    }
-}
-
-function cerrarSesionSinConfirmar(){
-    localStorage.removeItem(STORAGE_LOGIN);
-    localStorage.removeItem(STORAGE_DATA);
-    localStorage.removeItem(STORAGE_FILTERS);
-
-    data = [];
-
-    document.getElementById("loginUsuario").value = "";
-    document.getElementById("loginPassword").value = "";
-
-    render([], 0, 0);
-    cargarSesion();
 }
 
 function cerrarSesion(){
