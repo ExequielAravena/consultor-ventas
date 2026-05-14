@@ -425,7 +425,7 @@ function aplicarSesion(sesion){
 
     const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
 
-if (rol === "ADMIN") {
+if (rol === "ADMIN" || rol === "SUPERADMIN") {
     document.getElementById("adminBox").classList.remove("oculto");
     cargarVendedoresAdmin();
 } else {
