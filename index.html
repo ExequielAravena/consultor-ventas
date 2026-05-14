@@ -259,6 +259,10 @@ button {
   <select id="slpCodeConsulta">
     <option value="">Seleccione vendedor</option>
   </select>
+
+  <div class="botones">
+    <button class="warning" onclick="resetPasswordAdmin()">Reset password vendedor</button>
+  </div>
 </div>
     <div class="botones">
       <button onclick="sincronizarDesdeApi()">Sincronizar SAP</button>
@@ -315,7 +319,8 @@ const STORAGE_LOGIN = "ventas_offline_login_v1";
 const API_LOGIN = "https://api.cotaco.cl/api/login";
 const API_SYNC = "https://api.cotaco.cl/api/ventas-historicas-sync";
 const API_CAMBIAR_PASSWORD = "https://api.cotaco.cl/api/cambiar-password";
-  const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
+const API_RESET_PASSWORD = "https://api.cotaco.cl/api/admin/reset-password";
+const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 
 window.addEventListener("load", function(){
     cargarSesion();
@@ -469,8 +474,82 @@ async function cargarVendedoresAdmin(){
         combo.innerHTML = '<option value="">Error cargando vendedores</option>';
         alert("No se pudo cargar lista de vendedores.\n\n" + e.message);
     }
+
 }
 
+async function resetPasswordAdmin(){
+    const sesion = obtenerSesion();
+    const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
+    const combo = document.getElementById("slpCodeConsulta");
+    const estado = document.getElementById("estado");
+
+    if (!sesion.token) {
+        alert("Debe iniciar sesión nuevamente.");
+        cargarSesion();
+        return;
+    }
+
+    if (rol !== "ADMIN") {
+        alert("Solo usuario ADMIN puede resetear contraseñas.");
+        return;
+    }
+
+    if (!combo || !combo.value) {
+        alert("Debe seleccionar vendedor a resetear.");
+        return;
+    }
+
+    const opt = combo.options[combo.selectedIndex];
+    const slpCode = combo.value;
+    const slpName = opt ? opt.textContent : "";
+    const passwordTemporal = "Cotaco2026";
+
+    const confirma = confirm(
+        "¿Resetear password del vendedor?\n\n" +
+        "Vendedor: " + slpName + "\n" +
+        "SlpCode: " + slpCode + "\n\n" +
+        "Se asignará clave temporal:\n" + passwordTemporal + "\n\n" +
+        "El usuario deberá cambiarla al ingresar."
+    );
+
+    if (!confirma) return;
+
+    if (estado) estado.textContent = "Reseteando password...";
+
+    try {
+        const resp = await fetch(API_RESET_PASSWORD, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                token: sesion.token,
+                slpCode: Number(slpCode),
+                passwordTemporal: passwordTemporal
+            })
+        });
+
+        if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(txt || "No se pudo resetear password.");
+        }
+
+        const r = await resp.json();
+
+        if (estado) {
+            estado.textContent = "Password reseteada. Clave temporal: " + passwordTemporal;
+        }
+
+        alert(
+            "Password reseteada correctamente.\n\n" +
+            "Vendedor: " + slpName + "\n" +
+            "Clave temporal: " + passwordTemporal + "\n\n" +
+            "Debe cambiarla al ingresar."
+        );
+
+    } catch (e) {
+        if (estado) estado.textContent = "Error reseteando password.";
+        alert("No se pudo resetear password.\n\n" + e.message);
+    }
+}
 
 function mostrarCambioPassword(forzado){
     document.getElementById("loginBox").classList.add("oculto");
