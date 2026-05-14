@@ -484,6 +484,9 @@ if (rol === "ADMIN" && !slpCodeConsulta) {
 if (rol === "ADMIN") {
     url += `&slpCodeConsulta=${encodeURIComponent(slpCodeConsulta)}`;
 }
+console.log("URL sync:", url);
+console.log("Rol:", rol);
+console.log("SlpCode consulta:", slpCodeConsulta);
 
         const resp = await fetch(url);
 
