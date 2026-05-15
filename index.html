@@ -937,17 +937,22 @@ async function consultarPedidos(){
     lista.innerHTML = "";
 
     try {
-        let url = API_PEDIDOS + "?token=" + encodeURIComponent(sesion.token);
+        const params = new URLSearchParams();
+        params.set("token", sesion.token);
 
         if (rol === "ADMIN" || rol === "SUPERADMIN") {
-            url += "&slpCodeConsulta=" + encodeURIComponent(slpCodeConsulta);
+            params.set("slpCodeConsulta", slpCodeConsulta);
         }
 
-        if (pedido) url += "&pedido=" + encodeURIComponent(pedido);
-        if (cliente) url += "&cliente=" + encodeURIComponent(cliente);
-        if (producto) url += "&producto=" + encodeURIComponent(producto);
-        if (estado) url += "&estado=" + encodeURIComponent(estado);
-        if (accion) url += "&accion=" + encodeURIComponent(accion);
+        params.set("pedido", pedido);
+        params.set("cliente", cliente);
+        params.set("producto", producto);
+        params.set("estado", estado);
+        params.set("accion", accion);
+
+        const url = API_PEDIDOS + "?" + params.toString();
+
+        console.log("URL pedidos:", url);
 
         const resp = await fetch(url);
 
