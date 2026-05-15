@@ -247,6 +247,72 @@ button {
   font-size:12px;
 }
 
+
+.pedido-card {
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  padding:9px;
+}
+
+.pedido-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+  margin-bottom:5px;
+}
+
+.pedido-numero {
+  font-size:14px;
+  font-weight:bold;
+  color:#0d6efd;
+}
+
+.pedido-fecha {
+  font-size:12px;
+  color:#666;
+}
+
+.pedido-cliente {
+  font-size:13px;
+  font-weight:bold;
+  line-height:1.25;
+  margin-bottom:5px;
+}
+
+.pedido-producto {
+  font-size:13px;
+  line-height:1.25;
+  color:#333;
+  margin-bottom:6px;
+}
+
+.pedido-datos,
+.pedido-stock {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  font-size:12px;
+  line-height:1.35;
+  margin-top:5px;
+}
+
+.badge-estado {
+  display:inline-block;
+  border-radius:999px;
+  padding:3px 8px;
+  font-size:11px;
+  font-weight:bold;
+  background:#e9ecef;
+  color:#111;
+}
+
+.badge-ok { background:#d1e7dd; color:#0f5132; }
+.badge-warn { background:#fff3cd; color:#664d03; }
+.badge-danger { background:#f8d7da; color:#842029; }
+.badge-info { background:#cff4fc; color:#055160; }
+
 @media (min-width: 900px) {
   body { padding:12px; }
 
@@ -319,6 +385,7 @@ button {
     <div class="menu-modulos">
       <button id="btnModuloVentas" class="modulo-activo" onclick="mostrarModulo('ventas')">Ventas</button>
       <button id="btnModuloStock" class="secundario" onclick="mostrarModulo('stock')">Stock</button>
+      <button id="btnModuloPedidos" class="secundario" onclick="mostrarModulo('pedidos')">Pedidos</button>
     </div>
 
    <div id="adminBox" class="oculto">
@@ -394,6 +461,54 @@ button {
     <div id="stockLista" class="lista"></div>
   </div>
 
+  <div id="pedidosModulo" class="oculto">
+    <div class="card">
+      <label>N° Pedido</label>
+      <input type="text" id="pedidoBuscar" placeholder="Opcional. Ejemplo: 12345">
+
+      <label>Cliente</label>
+      <input type="text" id="pedidoCliente" placeholder="Opcional">
+
+      <label>Producto</label>
+      <input type="text" id="pedidoProducto" placeholder="Opcional">
+
+      <label>Estado</label>
+      <select id="pedidoEstado">
+        <option value="">Todos</option>
+        <option value="CON_STOCK">CON_STOCK</option>
+        <option value="PT_EN_TRANSITO">PT_EN_TRANSITO</option>
+        <option value="PT_EN_CALIDAD">PT_EN_CALIDAD</option>
+        <option value="PT_EN_PRODUCCION">PT_EN_PRODUCCION</option>
+        <option value="OF_PLANIFICADA">OF_PLANIFICADA</option>
+        <option value="FABRICACION_PARCIAL">FABRICACION_PARCIAL</option>
+        <option value="REQ_FABRICACION">REQ_FABRICACION</option>
+        <option value="REQ_COMPRA">REQ_COMPRA</option>
+      </select>
+
+      <label>Acción sugerida</label>
+      <select id="pedidoAccion">
+        <option value="">Todas</option>
+        <option value="SIN_ACCION">SIN_ACCION</option>
+        <option value="TRASLADO_DESDE_TRANSITO">TRASLADO_DESDE_TRANSITO</option>
+        <option value="LIBERAR_CALIDAD">LIBERAR_CALIDAD</option>
+        <option value="TRASLADAR_DESDE_BPRO">TRASLADAR_DESDE_BPRO</option>
+        <option value="EN_PRODUCCION">EN_PRODUCCION</option>
+        <option value="FABRICAR_RESTANTE">FABRICAR_RESTANTE</option>
+        <option value="FABRICAR">FABRICAR</option>
+        <option value="COMPRAR">COMPRAR</option>
+      </select>
+
+      <div class="botones">
+        <button onclick="consultarPedidos()">Consultar pedidos</button>
+        <button class="secundario" onclick="limpiarPedidos()">Limpiar</button>
+      </div>
+
+      <div id="pedidosEstado" class="status">Consulte pedidos abiertos del vendedor.</div>
+    </div>
+
+    <div id="pedidosLista" class="lista"></div>
+  </div>
+
 </div>
 
 <script>
@@ -409,6 +524,7 @@ const API_CAMBIAR_PASSWORD = "https://api.cotaco.cl/api/cambiar-password";
 const API_ADMIN_RESET_PASSWORD = "https://api.cotaco.cl/api/admin/reset-password";
 const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 const API_STOCK = "https://api.cotaco.cl/api/bot/stock";
+const API_PEDIDOS = "https://api.cotaco.cl/api/pedidos-estado";
 
 window.addEventListener("load", function(){
     cargarSesion();
@@ -427,6 +543,16 @@ window.addEventListener("load", function(){
             if (e.key === "Enter") consultarStock();
         });
     }
+
+
+    ["pedidoBuscar", "pedidoCliente", "pedidoProducto"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("keydown", function(e) {
+                if (e.key === "Enter") consultarPedidos();
+            });
+        }
+    });
 
     if (data.length > 0) {
         buscar();
@@ -655,36 +781,41 @@ if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
 function mostrarModulo(modulo){
     const ventasModulo = document.getElementById("ventasModulo");
     const stockModulo = document.getElementById("stockModulo");
+    const pedidosModulo = document.getElementById("pedidosModulo");
     const btnVentas = document.getElementById("btnModuloVentas");
     const btnStock = document.getElementById("btnModuloStock");
+    const btnPedidos = document.getElementById("btnModuloPedidos");
 
-    if (!ventasModulo || !stockModulo) return;
+    if (!ventasModulo || !stockModulo || !pedidosModulo) return;
+
+    ventasModulo.classList.add("oculto");
+    stockModulo.classList.add("oculto");
+    pedidosModulo.classList.add("oculto");
+
+    [btnVentas, btnStock, btnPedidos].forEach(btn => {
+        if (!btn) return;
+        btn.classList.remove("modulo-activo");
+        btn.classList.add("secundario");
+    });
 
     if (modulo === "stock") {
-        ventasModulo.classList.add("oculto");
         stockModulo.classList.remove("oculto");
-
-        if (btnVentas) {
-            btnVentas.classList.remove("modulo-activo");
-            btnVentas.classList.add("secundario");
-        }
-
         if (btnStock) {
             btnStock.classList.add("modulo-activo");
             btnStock.classList.remove("secundario");
         }
-
         const input = document.getElementById("stockBuscar");
         if (input) input.focus();
-    } else {
-        stockModulo.classList.add("oculto");
-        ventasModulo.classList.remove("oculto");
-
-        if (btnStock) {
-            btnStock.classList.remove("modulo-activo");
-            btnStock.classList.add("secundario");
+    } else if (modulo === "pedidos") {
+        pedidosModulo.classList.remove("oculto");
+        if (btnPedidos) {
+            btnPedidos.classList.add("modulo-activo");
+            btnPedidos.classList.remove("secundario");
         }
-
+        const input = document.getElementById("pedidoBuscar");
+        if (input) input.focus();
+    } else {
+        ventasModulo.classList.remove("oculto");
         if (btnVentas) {
             btnVentas.classList.add("modulo-activo");
             btnVentas.classList.remove("secundario");
@@ -773,6 +904,144 @@ function limpiarStock(){
     document.getElementById("stockEstado").textContent = "Ingrese código o nombre de producto.";
     document.getElementById("stockLista").innerHTML = "";
     document.getElementById("stockBuscar").focus();
+}
+
+
+async function consultarPedidos(){
+    const sesion = obtenerSesion();
+    const estadoDiv = document.getElementById("pedidosEstado");
+    const lista = document.getElementById("pedidosLista");
+
+    if (!sesion.token) {
+        alert("Debe iniciar sesión.");
+        cargarSesion();
+        return;
+    }
+
+    const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
+    const slpCodeConsulta = document.getElementById("slpCodeConsulta").value;
+
+    if ((rol === "ADMIN" || rol === "SUPERADMIN") && !slpCodeConsulta) {
+        alert("Usuario ADMIN debe seleccionar vendedor a consultar.");
+        estadoDiv.textContent = "Debe seleccionar vendedor a consultar.";
+        return;
+    }
+
+    const pedido = document.getElementById("pedidoBuscar").value.trim();
+    const cliente = document.getElementById("pedidoCliente").value.trim();
+    const producto = document.getElementById("pedidoProducto").value.trim();
+    const estado = document.getElementById("pedidoEstado").value;
+    const accion = document.getElementById("pedidoAccion").value;
+
+    estadoDiv.textContent = "Consultando pedidos abiertos en SAP...";
+    lista.innerHTML = "";
+
+    try {
+        let url = API_PEDIDOS + "?token=" + encodeURIComponent(sesion.token);
+
+        if (rol === "ADMIN" || rol === "SUPERADMIN") {
+            url += "&slpCodeConsulta=" + encodeURIComponent(slpCodeConsulta);
+        }
+
+        if (pedido) url += "&pedido=" + encodeURIComponent(pedido);
+        if (cliente) url += "&cliente=" + encodeURIComponent(cliente);
+        if (producto) url += "&producto=" + encodeURIComponent(producto);
+        if (estado) url += "&estado=" + encodeURIComponent(estado);
+        if (accion) url += "&accion=" + encodeURIComponent(accion);
+
+        const resp = await fetch(url);
+
+        if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(txt || "No se pudo consultar pedidos.");
+        }
+
+        const datos = await resp.json();
+
+        if (!datos || datos.length === 0) {
+            estadoDiv.textContent = "Sin pedidos abiertos para los filtros indicados.";
+            lista.innerHTML = '<div class="pedido-card">Sin resultados.</div>';
+            return;
+        }
+
+        estadoDiv.textContent = "Pedidos encontrados: " + datos.length.toLocaleString("es-CL") + ". Mostrando máximo 300 líneas.";
+        renderPedidos(datos);
+
+    } catch (e) {
+        estadoDiv.textContent = "Error consultando pedidos.";
+        lista.innerHTML = "";
+        alert("No se pudo consultar pedidos.\n\n" + e.message);
+    }
+}
+
+function limpiarPedidos(){
+    document.getElementById("pedidoBuscar").value = "";
+    document.getElementById("pedidoCliente").value = "";
+    document.getElementById("pedidoProducto").value = "";
+    document.getElementById("pedidoEstado").value = "";
+    document.getElementById("pedidoAccion").value = "";
+    document.getElementById("pedidosEstado").textContent = "Consulte pedidos abiertos del vendedor.";
+    document.getElementById("pedidosLista").innerHTML = "";
+    document.getElementById("pedidoBuscar").focus();
+}
+
+function renderPedidos(lista){
+    const contenedor = document.getElementById("pedidosLista");
+
+    contenedor.innerHTML = lista.map(x => {
+        const estado = x.EstadoLinea ?? x.estadoLinea ?? "";
+        const accion = x.AccionSugerida ?? x.accionSugerida ?? "";
+        const badge = claseEstadoPedido(estado);
+        const picking = (x.EnListaPicking ?? x.enListaPicking ?? "NO") === "SI" ? "SI" : "NO";
+        const nroPicking = x.NumeroListaPicking ?? x.numeroListaPicking ?? "";
+        const fechaPicking = x.FechaListaPicking ?? x.fechaListaPicking ?? "";
+
+        return `
+          <div class="pedido-card">
+            <div class="pedido-top">
+              <div>
+                <div class="pedido-numero">Pedido ${esc(x.NumeroPedido ?? x.numeroPedido ?? "")} / Línea ${esc(x.Linea ?? x.linea ?? "")}</div>
+                <div class="pedido-fecha">${esc(x.FechaPedido ?? x.fechaPedido ?? "")} · ${formato(x.DiasDesdePedido ?? x.diasDesdePedido ?? 0)} días</div>
+              </div>
+              <div class="badge-estado ${badge}">${esc(estado)}</div>
+            </div>
+
+            <div class="pedido-cliente">${esc(x.Cliente ?? x.cliente ?? "")}</div>
+            <div class="pedido-producto"><b>${esc(x.CodigoProducto ?? x.codigoProducto ?? "")}</b> · ${esc(x.Producto ?? x.producto ?? "")}</div>
+
+            <div class="pedido-datos">
+              <div><b>Pendiente:</b> ${formato(x.PendienteLinea ?? x.pendienteLinea ?? 0)}</div>
+              <div><b>Bodega pedido:</b> ${esc(x.BodegaPedido ?? x.bodegaPedido ?? "")}</div>
+              <div><b>Acción:</b> ${esc(accion)}</div>
+            </div>
+
+            <div class="pedido-stock">
+              <div><b>Stock pedido:</b> ${formato(x.StockPedido ?? x.stockPedido ?? 0)}</div>
+              <div><b>BPRO:</b> ${formato(x.StockBPRO ?? x.stockBPRO ?? 0)}</div>
+              <div><b>BCENV:</b> ${formato(x.StockBCENV ?? x.stockBCENV ?? 0)}</div>
+              <div><b>BTRN:</b> ${formato(x.StockBTRN ?? x.stockBTRN ?? 0)}</div>
+              <div><b>BZOVE:</b> ${formato(x.StockBZOVE ?? x.stockBZOVE ?? 0)}</div>
+            </div>
+
+            <div class="pedido-stock">
+              <div><b>En fabricación:</b> ${formato(x.EnFabricacion ?? x.enFabricacion ?? 0)}</div>
+              <div><b>OF abiertas:</b> ${formato(x.NroOFAbiertas ?? x.nroOFAbiertas ?? 0)}</div>
+              <div><b>Picking:</b> ${esc(picking)} ${nroPicking ? "#" + esc(nroPicking) : ""} ${fechaPicking ? "(" + esc(fechaPicking) + ")" : ""}</div>
+            </div>
+          </div>
+        `;
+    }).join("");
+}
+
+function claseEstadoPedido(estado){
+    const e = (estado || "").toUpperCase();
+
+    if (e === "CON_STOCK") return "badge-ok";
+    if (e === "PT_EN_TRANSITO" || e === "PT_EN_CALIDAD" || e === "PT_EN_PRODUCCION" || e === "OF_PLANIFICADA") return "badge-info";
+    if (e === "FABRICACION_PARCIAL") return "badge-warn";
+    if (e === "REQ_FABRICACION" || e === "REQ_COMPRA") return "badge-danger";
+
+    return "";
 }
 
 
