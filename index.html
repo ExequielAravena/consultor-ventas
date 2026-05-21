@@ -365,10 +365,11 @@ button {
   <label>Confirmar nueva contraseña</label>
   <input type="password" id="passwordNueva2" placeholder="Repita nueva contraseña">
 
-  <div class="botones">
-    <button onclick="guardarNuevaPassword()">Guardar contraseña</button>
-    <button id="btnCancelarCambioPassword" class="secundario" onclick="cancelarCambioPassword()">Cancelar</button>
-  </div>
+<div class="botones">
+  <button onclick="guardarNuevaPassword()">Guardar contraseña</button>
+  <button id="btnCancelarCambioPassword" class="secundario" onclick="cancelarCambioPassword()">Cancelar</button>
+  <button class="danger" onclick="cerrarSesionSinConfirmar()">Salir</button>
+</div>
 
   <div id="cambioPasswordEstado" class="status"></div>
 </div>
