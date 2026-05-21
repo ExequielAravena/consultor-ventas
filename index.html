@@ -1096,7 +1096,12 @@ function renderPedidos(lista){
 </div>
 
 <div class="pedido-datos">
-  <div><b>Condición despacho:</b> ${esc(x.CondicionDespacho ?? x.condicionDespacho ?? "")}</div>
+  <div>
+    <b>Condición despacho:</b>
+    <span class="badge-info" style="display:inline-block;border-radius:999px;padding:3px 8px;font-weight:bold;">
+      ${esc(x.CondicionDespacho ?? x.condicionDespacho ?? "")}
+    </span>
+  </div>
 </div>
 
             <div class="pedido-stock">
