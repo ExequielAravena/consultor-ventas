@@ -1016,11 +1016,15 @@ function renderPedidos(lista){
             <div class="pedido-producto"><b>${esc(x.CodigoProducto ?? x.codigoProducto ?? "")}</b> · ${esc(x.Producto ?? x.producto ?? "")}</div>
 
             <div class="pedido-datos">
-              <div><b>Pendiente:</b> ${formato(x.PendienteLinea ?? x.pendienteLinea ?? 0)}</div>
-              <div><b>Bodega pedido:</b> ${esc(x.BodegaPedido ?? x.bodegaPedido ?? "")}</div>
-              <div><b>Stock:</b> ${formato(x.StockPedido ?? x.stockPedido ?? 0)}</div>
-              <div><b>Acción:</b> ${esc(textoAccionPedido(accion))}</div>
-            </div>
+  <div><b>Pendiente:</b> ${formato(x.PendienteLinea ?? x.pendienteLinea ?? 0)}</div>
+  <div><b>Bodega pedido:</b> ${esc(x.BodegaPedido ?? x.bodegaPedido ?? "")}</div>
+  <div><b>Stock:</b> ${formato(x.StockPedido ?? x.stockPedido ?? 0)}</div>
+  <div><b>Acción:</b> ${esc(textoAccionPedido(accion))}</div>
+</div>
+
+<div class="pedido-datos">
+  <div><b>Condición despacho:</b> ${esc(x.CondicionDespacho ?? x.condicionDespacho ?? "")}</div>
+</div>
 
             <div class="pedido-stock">
               <div><b>BPRO:</b> ${formato(x.StockBPRO ?? x.stockBPRO ?? 0)}</div>
