@@ -442,6 +442,15 @@ button {
     <div id="totalInfo" class="total-info">Sin resultados.</div>
   </div>
 
+  <div class="total-box">
+    <div class="total-label">Resumen comercial mes actual</div>
+    <div style="margin-top:8px;font-size:13px;line-height:1.45;">
+      <div><b>Venta mes:</b> <span id="ventaMes">$0</span></div>
+      <div><b>Guías sin facturar:</b> <span id="guiasSinFactura">$0</span></div>
+      <div><b>Total venta + guías:</b> <span id="totalMes" style="font-weight:bold;color:#0d6efd;">$0</span></div>
+    </div>
+  </div>
+
   <div id="lista" class="lista"></div>
 
   </div>
@@ -526,6 +535,7 @@ const API_ADMIN_RESET_PASSWORD = "https://api.cotaco.cl/api/admin/reset-password
 const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 const API_STOCK = "https://api.cotaco.cl/api/bot/stock";
 const API_PEDIDOS = "https://api.cotaco.cl/api/pedidos-estado";
+const API_RESUMEN_MES = "https://api.cotaco.cl/api/bot/resumen-mes";
 
 window.addEventListener("load", function(){
     cargarSesion();
@@ -654,6 +664,7 @@ if (rol === "ADMIN" || rol === "SUPERADMIN") {
 } else {
     document.getElementById("adminBox").classList.add("oculto");
     document.getElementById("slpCodeConsulta").value = "";
+    cargarResumenMes();
 }
 }
 
@@ -692,6 +703,13 @@ async function cargarVendedoresAdmin(){
         });
 
         cargarFiltros();
+
+        combo.onchange = function () {
+            guardarFiltros();
+            cargarResumenMes();
+        };
+
+        cargarResumenMes();
 
     } catch (e) {
         combo.innerHTML = '<option value="">Error cargando vendedores</option>';
@@ -1236,6 +1254,7 @@ console.log("SlpCode consulta:", slpCodeConsulta);
         aplicarFechasBase();
         guardarFiltros();
         buscar();
+        cargarResumenMes();
 
     } catch (e) {
         estado.textContent = "Error sincronizando desde SAP.";
@@ -1286,6 +1305,7 @@ function borrarBase(){
 
     document.getElementById("estado").textContent = "Base local eliminada.";
     render([], 0, 0);
+    cargarResumenMes();
 }
 
 function guardarFiltros(){
@@ -1391,6 +1411,56 @@ function cumpleTexto(valor, busqueda){
     const palabras = normalizar(busqueda).split(/\s+/).filter(Boolean);
     const valorNorm = normalizar(valor);
     return palabras.length === 0 || palabras.every(p => valorNorm.includes(p));
+}
+
+async function cargarResumenMes(){
+    const sesion = obtenerSesion();
+
+    if (!sesion.token) return;
+
+    const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
+    let slpCodeConsulta = "";
+
+    if (rol === "ADMIN" || rol === "SUPERADMIN") {
+        slpCodeConsulta = document.getElementById("slpCodeConsulta")?.value || "";
+
+        if (!slpCodeConsulta) {
+            document.getElementById("ventaMes").textContent = "$0";
+            document.getElementById("guiasSinFactura").textContent = "$0";
+            document.getElementById("totalMes").textContent = "$0";
+            return;
+        }
+    }
+
+    try {
+        let url = `${API_RESUMEN_MES}?token=${encodeURIComponent(sesion.token)}`;
+
+        if (slpCodeConsulta) {
+            url += `&slpCodeConsulta=${encodeURIComponent(slpCodeConsulta)}`;
+        }
+
+        const resp = await fetch(url);
+
+        if (!resp.ok) {
+            throw new Error("Error obteniendo resumen comercial.");
+        }
+
+        const resumen = await resp.json();
+
+        const ventaMes = resumen.ventaMes ?? resumen.VentaMes ?? 0;
+        const guiasSinFactura = resumen.guiasSinFactura ?? resumen.GuiasSinFactura ?? 0;
+        const total = resumen.total ?? resumen.Total ?? 0;
+
+        document.getElementById("ventaMes").textContent = "$" + formato(ventaMes);
+        document.getElementById("guiasSinFactura").textContent = "$" + formato(guiasSinFactura);
+        document.getElementById("totalMes").textContent = "$" + formato(total);
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById("ventaMes").textContent = "$0";
+        document.getElementById("guiasSinFactura").textContent = "$0";
+        document.getElementById("totalMes").textContent = "$0";
+    }
 }
 
 function buscar(){
