@@ -313,6 +313,27 @@ button {
 .badge-danger { background:#f8d7da; color:#842029; }
 .badge-info { background:#cff4fc; color:#055160; }
 
+
+.resumen-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  max-width:1100px;
+  margin:0 auto 8px auto;
+}
+
+.resumen-grid .total-box {
+  width:100%;
+  max-width:none;
+  margin:0;
+}
+
+@media (max-width: 700px) {
+  .resumen-grid {
+    grid-template-columns:1fr;
+  }
+}
+
 @media (min-width: 900px) {
   body { padding:12px; }
 
@@ -434,12 +455,6 @@ button {
       <button onclick="buscar()">Buscar</button>
       <button class="secundario" onclick="limpiar()">Limpiar</button>
     </div>
-  </div>
-
-  <div class="total-box">
-    <div class="total-label">Total venta del despliegue</div>
-    <div id="totalVenta" class="total-valor">$0</div>
-    <div id="totalInfo" class="total-info">Sin resultados.</div>
   </div>
 
   <div class="resumen-grid">
