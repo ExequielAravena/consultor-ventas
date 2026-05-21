@@ -328,6 +328,34 @@ button {
   margin:0;
 }
 
+
+.cumplimiento-kpi {
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-weight:bold;
+}
+
+.cumplimiento-ok {
+  background:#d1e7dd;
+  color:#0f5132;
+}
+
+.cumplimiento-warn {
+  background:#fff3cd;
+  color:#664d03;
+}
+
+.cumplimiento-danger {
+  background:#f8d7da;
+  color:#842029;
+}
+
+.cumplimiento-neutral {
+  background:#e9ecef;
+  color:#495057;
+}
+
 @media (max-width: 700px) {
   .resumen-grid {
     grid-template-columns:1fr;
@@ -471,6 +499,8 @@ button {
       <div><b>Venta mes:</b> <span id="ventaMes">$0</span></div>
       <div><b>Guías sin facturar:</b> <span id="guiasSinFactura">$0</span></div>
       <div><b>Total venta + guías:</b> <span id="totalMes" style="font-weight:bold;color:#0d6efd;">$0</span></div>
+      <div><b>Meta mes:</b> <span id="metaMes">$0</span></div>
+      <div><b>Cumplimiento:</b> <span id="cumplimientoMes" class="cumplimiento-kpi cumplimiento-neutral">0%</span></div>
     </div>
   </div>
 
@@ -1450,9 +1480,7 @@ async function cargarResumenMes(){
         slpCodeConsulta = document.getElementById("slpCodeConsulta")?.value || "";
 
         if (!slpCodeConsulta) {
-            document.getElementById("ventaMes").textContent = "$0";
-            document.getElementById("guiasSinFactura").textContent = "$0";
-            document.getElementById("totalMes").textContent = "$0";
+            limpiarResumenMes();
             return;
         }
     }
@@ -1475,16 +1503,60 @@ async function cargarResumenMes(){
         const ventaMes = resumen.ventaMes ?? resumen.VentaMes ?? 0;
         const guiasSinFactura = resumen.guiasSinFactura ?? resumen.GuiasSinFactura ?? 0;
         const total = resumen.total ?? resumen.Total ?? 0;
+        const metaMes = resumen.metaMes ?? resumen.MetaMes ?? 0;
+        const cumplimiento = resumen.cumplimiento ?? resumen.Cumplimiento ?? 0;
 
         document.getElementById("ventaMes").textContent = "$" + formato(ventaMes);
         document.getElementById("guiasSinFactura").textContent = "$" + formato(guiasSinFactura);
         document.getElementById("totalMes").textContent = "$" + formato(total);
+        document.getElementById("metaMes").textContent = "$" + formato(metaMes);
+        actualizarCumplimiento(cumplimiento, metaMes);
 
     } catch (e) {
         console.error(e);
-        document.getElementById("ventaMes").textContent = "$0";
-        document.getElementById("guiasSinFactura").textContent = "$0";
-        document.getElementById("totalMes").textContent = "$0";
+        limpiarResumenMes();
+    }
+}
+
+function limpiarResumenMes(){
+    document.getElementById("ventaMes").textContent = "$0";
+    document.getElementById("guiasSinFactura").textContent = "$0";
+    document.getElementById("totalMes").textContent = "$0";
+    document.getElementById("metaMes").textContent = "$0";
+    actualizarCumplimiento(0, 0);
+}
+
+function actualizarCumplimiento(cumplimiento, metaMes){
+    const el = document.getElementById("cumplimientoMes");
+    if (!el) return;
+
+    const valor = Number(cumplimiento || 0);
+    const meta = Number(metaMes || 0);
+
+    el.classList.remove(
+        "cumplimiento-ok",
+        "cumplimiento-warn",
+        "cumplimiento-danger",
+        "cumplimiento-neutral"
+    );
+
+    if (meta <= 0) {
+        el.textContent = "Sin meta";
+        el.classList.add("cumplimiento-neutral");
+        return;
+    }
+
+    el.textContent = valor.toLocaleString("es-CL", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+    }) + "%";
+
+    if (valor >= 100) {
+        el.classList.add("cumplimiento-ok");
+    } else if (valor >= 80) {
+        el.classList.add("cumplimiento-warn");
+    } else {
+        el.classList.add("cumplimiento-danger");
     }
 }
 
