@@ -320,8 +320,40 @@ button {
   line-height:1.25;
 }
 
-select[multiple] {
-  min-height:88px;
+.checklist-box {
+  background:#fff;
+  border:1px solid #ccc;
+  border-radius:6px;
+  padding:7px;
+  margin-top:4px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  max-height:170px;
+  overflow-y:auto;
+}
+
+.check-item {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:12px;
+  line-height:1.25;
+  padding:3px 2px;
+}
+
+.check-item input {
+  width:auto;
+  margin:0;
+  padding:0;
+}
+
+.check-item-todas {
+  font-weight:bold;
+  color:#0d6efd;
+  border-bottom:1px solid #e9ecef;
+  padding-bottom:6px;
+  margin-bottom:2px;
 }
 
 
@@ -554,9 +586,13 @@ select[multiple] {
       </select>
 
       <label>Condición despacho</label>
-      <select id="pedidoCondicionDespacho" multiple>
-      </select>
-      <div class="filtro-ayuda">Puede seleccionar más de una condición con Ctrl + clic. Si no selecciona ninguna, consulta todas.</div>
+      <div id="pedidoCondicionDespachoBox" class="checklist-box">
+        <label class="check-item check-item-todas">
+          <input type="checkbox" id="chkCondicionTodas" checked onchange="toggleCondicionTodas()">
+          Todas
+        </label>
+      </div>
+      <div class="filtro-ayuda">Marque una o más condiciones. Si “Todas” está marcado, no se aplica filtro.</div>
 
       <label>Acción sugerida</label>
       <select id="pedidoAccion">
@@ -608,7 +644,7 @@ window.addEventListener("load", function(){
     cargarFiltros();
     aplicarFechasInicialesSiCorresponde();
 
-["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "pedidoDivisionVendedor", "pedidoCondicionDespacho", "pedidoAccion"].forEach(id => {
+["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "pedidoDivisionVendedor", "chkCondicionTodas", "pedidoAccion"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener("input", guardarFiltros);
     });
@@ -1033,24 +1069,47 @@ async function cargarDivisionesPedidos(token){
 }
 
 async function cargarCondicionesDespachoPedidos(token){
-    const combo = document.getElementById("pedidoCondicionDespacho");
-    if (!combo) return;
+    const box = document.getElementById("pedidoCondicionDespachoBox");
+    if (!box) return;
 
     const valoresActuales = obtenerValoresSeleccionados("pedidoCondicionDespacho");
-    combo.innerHTML = "";
+
+    box.innerHTML = `
+      <label class="check-item check-item-todas">
+        <input type="checkbox" id="chkCondicionTodas" checked onchange="toggleCondicionTodas()">
+        Todas
+      </label>
+    `;
 
     try {
         const resp = await fetch(`${API_PEDIDOS_CONDICIONES}?token=${encodeURIComponent(token)}`);
         if (!resp.ok) throw new Error("HTTP " + resp.status);
 
         const datos = await resp.json();
-        datos.forEach(x => {
+
+        datos.forEach((x, idx) => {
             const condicion = x.condicion ?? x.Condicion ?? "";
             if (!condicion) return;
-            const opt = document.createElement("option");
-            opt.value = condicion;
-            opt.textContent = condicion;
-            combo.appendChild(opt);
+
+            const label = document.createElement("label");
+            label.className = "check-item";
+
+            const chk = document.createElement("input");
+            chk.type = "checkbox";
+            chk.className = "chk-condicion-despacho";
+            chk.value = condicion;
+            chk.id = "chkCondicionDespacho_" + idx;
+            chk.addEventListener("change", function(){
+                actualizarEstadoTodasCondicion();
+                guardarFiltros();
+            });
+
+            const span = document.createElement("span");
+            span.textContent = condicion;
+
+            label.appendChild(chk);
+            label.appendChild(span);
+            box.appendChild(label);
         });
 
         setValoresSeleccionados("pedidoCondicionDespacho", valoresActuales);
@@ -1059,20 +1118,74 @@ async function cargarCondicionesDespachoPedidos(token){
     }
 }
 
+function toggleCondicionTodas(){
+    const chkTodas = document.getElementById("chkCondicionTodas");
+    const checks = document.querySelectorAll(".chk-condicion-despacho");
+
+    if (chkTodas && chkTodas.checked) {
+        checks.forEach(chk => chk.checked = false);
+    }
+
+    guardarFiltros();
+}
+
+function actualizarEstadoTodasCondicion(){
+    const chkTodas = document.getElementById("chkCondicionTodas");
+    const checks = Array.from(document.querySelectorAll(".chk-condicion-despacho"));
+    const haySeleccion = checks.some(chk => chk.checked);
+
+    if (chkTodas) {
+        chkTodas.checked = !haySeleccion;
+    }
+}
+
 function obtenerValoresSeleccionados(id){
+    if (id === "pedidoCondicionDespacho") {
+        const chkTodas = document.getElementById("chkCondicionTodas");
+        if (chkTodas && chkTodas.checked) return [];
+
+        return Array.from(document.querySelectorAll(".chk-condicion-despacho:checked"))
+            .map(chk => chk.value)
+            .filter(v => v !== "");
+    }
+
     const el = document.getElementById(id);
     if (!el) return [];
-    return Array.from(el.selectedOptions || [])
-        .map(opt => opt.value)
-        .filter(v => v !== "");
+
+    if (el.selectedOptions) {
+        return Array.from(el.selectedOptions || [])
+            .map(opt => opt.value)
+            .filter(v => v !== "");
+    }
+
+    return [];
 }
 
 function setValoresSeleccionados(id, valores){
+    if (id === "pedidoCondicionDespacho") {
+        const valoresValidos = Array.isArray(valores) ? valores.filter(v => v !== "") : [];
+        const set = new Set(valoresValidos);
+        const checks = Array.from(document.querySelectorAll(".chk-condicion-despacho"));
+        const chkTodas = document.getElementById("chkCondicionTodas");
+
+        checks.forEach(chk => {
+            chk.checked = set.has(chk.value);
+        });
+
+        const haySeleccion = checks.some(chk => chk.checked);
+
+        if (chkTodas) {
+            chkTodas.checked = !haySeleccion;
+        }
+
+        return;
+    }
+
     const el = document.getElementById(id);
     if (!el) return;
 
     const set = new Set(valores || []);
-    Array.from(el.options).forEach(opt => {
+    Array.from(el.options || []).forEach(opt => {
         opt.selected = set.has(opt.value);
     });
 }
@@ -1514,7 +1627,7 @@ function cargarFiltros(){
             document.getElementById('pedidoDivisionVendedor').value = filtros.pedidoDivisionVendedor || '';
         }
 
-        if (document.getElementById('pedidoCondicionDespacho')) {
+        if (document.getElementById('pedidoCondicionDespachoBox')) {
             setValoresSeleccionados('pedidoCondicionDespacho', filtros.pedidoCondicionDespacho || []);
         }
 
