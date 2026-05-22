@@ -597,7 +597,7 @@ button {
       <label>Acción sugerida</label>
       <select id="pedidoAccion">
         <option value="">Todas</option>
-        <option value="SIN_ACCION">SIN_ACCION</option>
+     <option value="DESPACHAR">DESPACHAR</option>
         <option value="TRASLADO_DESDE_TRANSITO">TRASLADO_DESDE_TRANSITO</option>
         <option value="LIBERAR_CALIDAD">LIBERAR_CALIDAD</option>
         <option value="TRASLADAR_DESDE_BPRO">TRASLADAR_DESDE_BPRO</option>
@@ -1330,7 +1330,12 @@ function renderPedidos(lista){
 function textoAccionPedido(accion){
     const a = (accion || "").toUpperCase();
 
-    if (a === "SIN_ACCION") return "SE PUEDE DESPACHAR";
+    if (a === "DESPACHAR") return "DESPACHAR";
+    if (a === "TRASLADO_DESDE_TRANSITO") return "TRASLADO DESDE TRÁNSITO";
+    if (a === "LIBERAR_CALIDAD") return "LIBERAR CALIDAD";
+    if (a === "TRASLADAR_DESDE_BPRO") return "TRASLADAR DESDE BPRO";
+    if (a === "EN_PRODUCCION") return "EN PRODUCCIÓN";
+    if (a === "FABRICAR_RESTANTE") return "FABRICAR RESTANTE";
 
     return accion || "";
 }
