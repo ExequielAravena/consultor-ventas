@@ -441,7 +441,7 @@ button {
    <div id="adminBox" class="oculto">
   <label>Vendedor a consultar</label>
   <select id="slpCodeConsulta">
-    <option value="">Seleccione vendedor</option>
+    <option value="">Todos los vendedores</option>
   </select>
 
   <div class="botones">
@@ -712,13 +712,15 @@ function aplicarSesion(sesion){
         sesion.rol || sesion.Rol || "";
 
     const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
-if ((rol === "ADMIN" || rol === "SUPERADMIN") && slpCodeConsulta) {
-    params.set("slpCodeConsulta", slpCodeConsulta);
-} else {
-    document.getElementById("adminBox").classList.add("oculto");
-    document.getElementById("slpCodeConsulta").value = "";
-    cargarResumenMes();
-}
+
+    if (rol === "ADMIN" || rol === "SUPERADMIN") {
+        document.getElementById("adminBox").classList.remove("oculto");
+        cargarVendedoresAdmin();
+    } else {
+        document.getElementById("adminBox").classList.add("oculto");
+        document.getElementById("slpCodeConsulta").value = "";
+        cargarResumenMes();
+    }
 }
 
 function obtenerSesion(){
@@ -746,7 +748,7 @@ async function cargarVendedoresAdmin(){
 
         const vendedores = await resp.json();
 
-  <option value="">Todos los vendedores</option>
+        combo.innerHTML = '<option value="">Todos los vendedores</option>';
 
         vendedores.forEach(v => {
             const opt = document.createElement("option");
@@ -766,7 +768,9 @@ async function cargarVendedoresAdmin(){
 
     } catch (e) {
         combo.innerHTML = '<option value="">Error cargando vendedores</option>';
-        alert("No se pudo cargar lista de vendedores.\n\n" + e.message);
+        alert("No se pudo cargar lista de vendedores.
+
+" + e.message);
     }
 }
 
@@ -993,10 +997,6 @@ async function consultarPedidos(){
     const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
     const slpCodeConsulta = document.getElementById("slpCodeConsulta").value;
 
- if (rol === "ADMIN" || rol === "SUPERADMIN") {
-    params.set("slpCodeConsulta", slpCodeConsulta);
-}
-
     const pedido = document.getElementById("pedidoBuscar").value.trim();
     const cliente = document.getElementById("pedidoCliente").value.trim();
     const producto = document.getElementById("pedidoProducto").value.trim();
@@ -1010,7 +1010,7 @@ async function consultarPedidos(){
         const params = new URLSearchParams();
         params.set("token", sesion.token);
 
-        if (rol === "ADMIN" || rol === "SUPERADMIN") {
+        if ((rol === "ADMIN" || rol === "SUPERADMIN") && slpCodeConsulta) {
             params.set("slpCodeConsulta", slpCodeConsulta);
         }
 
