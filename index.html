@@ -712,10 +712,8 @@ function aplicarSesion(sesion){
         sesion.rol || sesion.Rol || "";
 
     const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
-
-if (rol === "ADMIN" || rol === "SUPERADMIN") {
-    document.getElementById("adminBox").classList.remove("oculto");
-    cargarVendedoresAdmin();
+if ((rol === "ADMIN" || rol === "SUPERADMIN") && slpCodeConsulta) {
+    params.set("slpCodeConsulta", slpCodeConsulta);
 } else {
     document.getElementById("adminBox").classList.add("oculto");
     document.getElementById("slpCodeConsulta").value = "";
@@ -748,7 +746,7 @@ async function cargarVendedoresAdmin(){
 
         const vendedores = await resp.json();
 
-        combo.innerHTML = '<option value="">Seleccione vendedor</option>';
+  <option value="">Todos los vendedores</option>
 
         vendedores.forEach(v => {
             const opt = document.createElement("option");
