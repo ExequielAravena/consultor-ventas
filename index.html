@@ -1445,18 +1445,24 @@ async function guardarNuevaPassword(){
     }
 }
 
-function cerrarSesionSinConfirmar(){
+async function cerrarSesionSinConfirmar(){
     localStorage.removeItem(STORAGE_LOGIN);
     localStorage.removeItem(STORAGE_DATA);
     localStorage.removeItem(STORAGE_FILTERS);
 
     data = [];
 
-    document.getElementById("loginUsuario").value = "";
-    document.getElementById("loginPassword").value = "";
+    if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+    }
 
-    render([], 0, 0);
-    cargarSesion();
+    if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+    }
+
+    location.reload();
 }
 
 function cerrarSesion(){
