@@ -995,11 +995,9 @@ async function consultarPedidos(){
     const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
     const slpCodeConsulta = document.getElementById("slpCodeConsulta").value;
 
-    if ((rol === "ADMIN" || rol === "SUPERADMIN") && !slpCodeConsulta) {
-        alert("Usuario ADMIN debe seleccionar vendedor a consultar.");
-        estadoDiv.textContent = "Debe seleccionar vendedor a consultar.";
-        return;
-    }
+ if (rol === "ADMIN" || rol === "SUPERADMIN") {
+    params.set("slpCodeConsulta", slpCodeConsulta);
+}
 
     const pedido = document.getElementById("pedidoBuscar").value.trim();
     const cliente = document.getElementById("pedidoCliente").value.trim();
