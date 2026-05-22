@@ -313,6 +313,17 @@ button {
 .badge-danger { background:#f8d7da; color:#842029; }
 .badge-info { background:#cff4fc; color:#055160; }
 
+.filtro-ayuda {
+  font-size:11px;
+  color:#666;
+  margin-top:3px;
+  line-height:1.25;
+}
+
+select[multiple] {
+  min-height:88px;
+}
+
 
 .resumen-grid {
   display:grid;
@@ -537,18 +548,15 @@ button {
       <label>Producto</label>
       <input type="text" id="pedidoProducto" placeholder="Opcional">
 
-      <label>Estado</label>
-      <select id="pedidoEstado">
-        <option value="">Todos</option>
-        <option value="CON_STOCK">CON_STOCK</option>
-        <option value="PT_EN_TRANSITO">PT_EN_TRANSITO</option>
-        <option value="PT_EN_CALIDAD">PT_EN_CALIDAD</option>
-        <option value="PT_EN_PRODUCCION">PT_EN_PRODUCCION</option>
-        <option value="OF_PLANIFICADA">OF_PLANIFICADA</option>
-        <option value="FABRICACION_PARCIAL">FABRICACION_PARCIAL</option>
-        <option value="REQ_FABRICACION">REQ_FABRICACION</option>
-        <option value="REQ_COMPRA">REQ_COMPRA</option>
+      <label>División vendedor</label>
+      <select id="pedidoDivisionVendedor">
+        <option value="">Todas</option>
       </select>
+
+      <label>Condición despacho</label>
+      <select id="pedidoCondicionDespacho" multiple>
+      </select>
+      <div class="filtro-ayuda">Puede seleccionar más de una condición con Ctrl + clic. Si no selecciona ninguna, consulta todas.</div>
 
       <label>Acción sugerida</label>
       <select id="pedidoAccion">
@@ -591,6 +599,8 @@ const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 const API_STOCK = "https://api.cotaco.cl/api/bot/stock";
 const API_PEDIDOS = "https://api.cotaco.cl/api/pedidos-estado";
 const API_RESUMEN_MES = "https://api.cotaco.cl/api/bot/resumen-mes";
+const API_PEDIDOS_DIVISIONES = "https://api.cotaco.cl/api/pedidos/divisiones-vendedor";
+const API_PEDIDOS_CONDICIONES = "https://api.cotaco.cl/api/pedidos/condiciones-despacho";
 
 window.addEventListener("load", function(){
     cargarSesion();
@@ -598,7 +608,7 @@ window.addEventListener("load", function(){
     cargarFiltros();
     aplicarFechasInicialesSiCorresponde();
 
-["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta"].forEach(id => {
+["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "pedidoDivisionVendedor", "pedidoCondicionDespacho", "pedidoAccion"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener("input", guardarFiltros);
     });
@@ -720,6 +730,7 @@ function aplicarSesion(sesion){
         document.getElementById("adminBox").classList.add("oculto");
         document.getElementById("slpCodeConsulta").value = "";
         cargarResumenMes();
+        cargarCombosPedidos();
     }
 }
 
@@ -765,6 +776,7 @@ async function cargarVendedoresAdmin(){
         };
 
         cargarResumenMes();
+        cargarCombosPedidos();
 
     } catch (e) {
         combo.innerHTML = '<option value="">Error cargando vendedores</option>';
@@ -981,6 +993,90 @@ function limpiarStock(){
 }
 
 
+async function cargarCombosPedidos(){
+    const sesion = obtenerSesion();
+    if (!sesion.token) return;
+
+    await Promise.all([
+        cargarDivisionesPedidos(sesion.token),
+        cargarCondicionesDespachoPedidos(sesion.token)
+    ]);
+
+    cargarFiltros();
+}
+
+async function cargarDivisionesPedidos(token){
+    const combo = document.getElementById("pedidoDivisionVendedor");
+    if (!combo) return;
+
+    const valorActual = combo.value || "";
+    combo.innerHTML = '<option value="">Todas</option>';
+
+    try {
+        const resp = await fetch(`${API_PEDIDOS_DIVISIONES}?token=${encodeURIComponent(token)}`);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+
+        const datos = await resp.json();
+        datos.forEach(x => {
+            const division = x.division ?? x.Division ?? "";
+            if (!division) return;
+            const opt = document.createElement("option");
+            opt.value = division;
+            opt.textContent = division;
+            combo.appendChild(opt);
+        });
+
+        combo.value = valorActual;
+    } catch (e) {
+        console.error("No se pudieron cargar divisiones de pedidos", e);
+    }
+}
+
+async function cargarCondicionesDespachoPedidos(token){
+    const combo = document.getElementById("pedidoCondicionDespacho");
+    if (!combo) return;
+
+    const valoresActuales = obtenerValoresSeleccionados("pedidoCondicionDespacho");
+    combo.innerHTML = "";
+
+    try {
+        const resp = await fetch(`${API_PEDIDOS_CONDICIONES}?token=${encodeURIComponent(token)}`);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+
+        const datos = await resp.json();
+        datos.forEach(x => {
+            const condicion = x.condicion ?? x.Condicion ?? "";
+            if (!condicion) return;
+            const opt = document.createElement("option");
+            opt.value = condicion;
+            opt.textContent = condicion;
+            combo.appendChild(opt);
+        });
+
+        setValoresSeleccionados("pedidoCondicionDespacho", valoresActuales);
+    } catch (e) {
+        console.error("No se pudieron cargar condiciones de despacho", e);
+    }
+}
+
+function obtenerValoresSeleccionados(id){
+    const el = document.getElementById(id);
+    if (!el) return [];
+    return Array.from(el.selectedOptions || [])
+        .map(opt => opt.value)
+        .filter(v => v !== "");
+}
+
+function setValoresSeleccionados(id, valores){
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const set = new Set(valores || []);
+    Array.from(el.options).forEach(opt => {
+        opt.selected = set.has(opt.value);
+    });
+}
+
 async function consultarPedidos(){
     const sesion = obtenerSesion();
     const estadoDiv = document.getElementById("pedidosEstado");
@@ -998,7 +1094,8 @@ async function consultarPedidos(){
     const pedido = document.getElementById("pedidoBuscar").value.trim();
     const cliente = document.getElementById("pedidoCliente").value.trim();
     const producto = document.getElementById("pedidoProducto").value.trim();
-    const estado = document.getElementById("pedidoEstado").value;
+    const divisionVendedor = document.getElementById("pedidoDivisionVendedor")?.value || "";
+    const condicionesDespacho = obtenerValoresSeleccionados("pedidoCondicionDespacho");
     const accion = document.getElementById("pedidoAccion").value;
 
     estadoDiv.textContent = "Consultando pedidos abiertos en SAP...";
@@ -1015,7 +1112,8 @@ async function consultarPedidos(){
         params.set("pedido", pedido);
         params.set("cliente", cliente);
         params.set("producto", producto);
-        params.set("estado", estado);
+        params.set("divisionVendedor", divisionVendedor);
+        params.set("condicionDespacho", condicionesDespacho.join("|"));
         params.set("accion", accion);
 
         const url = API_PEDIDOS + "?" + params.toString();
@@ -1051,7 +1149,8 @@ function limpiarPedidos(){
     document.getElementById("pedidoBuscar").value = "";
     document.getElementById("pedidoCliente").value = "";
     document.getElementById("pedidoProducto").value = "";
-    document.getElementById("pedidoEstado").value = "";
+    document.getElementById("pedidoDivisionVendedor").value = "";
+    setValoresSeleccionados("pedidoCondicionDespacho", []);
     document.getElementById("pedidoAccion").value = "";
     document.getElementById("pedidosEstado").textContent = "Consulte pedidos abiertos del vendedor.";
     document.getElementById("pedidosLista").innerHTML = "";
@@ -1083,6 +1182,7 @@ function renderPedidos(lista){
             <div class="pedido-producto"><b>${esc(x.CodigoProducto ?? x.codigoProducto ?? "")}</b> · ${esc(x.Producto ?? x.producto ?? "")}</div>
 
             <div class="pedido-datos">
+  <div><b>Div. vendedor:</b> ${esc(x.DivisionVendedor ?? x.divisionVendedor ?? "")}</div>
   <div><b>Pendiente:</b> ${formato(x.PendienteLinea ?? x.pendienteLinea ?? 0)}</div>
   <div><b>Bodega pedido:</b> ${esc(x.BodegaPedido ?? x.bodegaPedido ?? "")}</div>
   <div><b>Stock:</b> ${formato(x.StockPedido ?? x.stockPedido ?? 0)}</div>
@@ -1309,6 +1409,7 @@ console.log("SlpCode consulta:", slpCodeConsulta);
         guardarFiltros();
         buscar();
         cargarResumenMes();
+        cargarCombosPedidos();
 
     } catch (e) {
         estado.textContent = "Error sincronizando desde SAP.";
@@ -1369,7 +1470,10 @@ function guardarFiltros(){
         fechaHasta: document.getElementById('fechaHasta').value,
         cliente: document.getElementById('cliente').value,
         producto: document.getElementById('producto').value,
-        folio: document.getElementById('folio').value
+        folio: document.getElementById('folio').value,
+        pedidoDivisionVendedor: document.getElementById('pedidoDivisionVendedor')?.value || '',
+        pedidoCondicionDespacho: obtenerValoresSeleccionados('pedidoCondicionDespacho'),
+        pedidoAccion: document.getElementById('pedidoAccion')?.value || ''
     };
 
     try {
@@ -1405,6 +1509,18 @@ function cargarFiltros(){
 
         document.getElementById('folio').value =
             filtros.folio || '';
+
+        if (document.getElementById('pedidoDivisionVendedor')) {
+            document.getElementById('pedidoDivisionVendedor').value = filtros.pedidoDivisionVendedor || '';
+        }
+
+        if (document.getElementById('pedidoCondicionDespacho')) {
+            setValoresSeleccionados('pedidoCondicionDespacho', filtros.pedidoCondicionDespacho || []);
+        }
+
+        if (document.getElementById('pedidoAccion')) {
+            document.getElementById('pedidoAccion').value = filtros.pedidoAccion || '';
+        }
 
     } catch {
         console.log("No se pudieron cargar filtros.");
