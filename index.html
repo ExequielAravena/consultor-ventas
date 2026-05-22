@@ -585,15 +585,22 @@ button {
         <option value="">Todas</option>
       </select>
 
-      <label>Condición despacho</label>
-      <div id="pedidoCondicionDespachoBox" class="checklist-box">
-        <label class="check-item check-item-todas">
-          <input type="checkbox" id="chkCondicionTodas" checked onchange="toggleCondicionTodas()">
-          Todas
-        </label>
-      </div>
-      <div class="filtro-ayuda">Marque una o más condiciones. Si “Todas” está marcado, no se aplica filtro.</div>
+<label>Condición despacho</label>
 
+<details class="checkbox-dropdown">
+  <summary>Seleccionar condición despacho</summary>
+
+  <div id="pedidoCondicionDespachoBox" class="checkbox-lista">
+    <label class="check-item">
+      <input type="checkbox" id="pedidoCondicionTodas" checked>
+      Todas
+    </label>
+  </div>
+</details>
+
+<div class="filtro-ayuda">
+  Marque una o más condiciones. Si “Todas” está marcado, no se aplica filtro.
+</div>
       <label>Acción sugerida</label>
       <select id="pedidoAccion">
         <option value="">Todas</option>
