@@ -768,9 +768,7 @@ async function cargarVendedoresAdmin(){
 
     } catch (e) {
         combo.innerHTML = '<option value="">Error cargando vendedores</option>';
-        alert("No se pudo cargar lista de vendedores.
-
-" + e.message);
+        alert("No se pudo cargar lista de vendedores.\n\n" + e.message);
     }
 }
 
