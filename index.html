@@ -370,6 +370,101 @@ button {
   overflow-y:auto;
 }
 
+.kpi-comercial {
+  background:linear-gradient(135deg,#eaf3ff 0%,#ffffff 58%,#eefaf4 100%);
+  border:1px solid #b9dcff;
+  box-shadow:0 4px 12px rgba(13,110,253,0.16);
+}
+
+.kpi-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+  margin-bottom:8px;
+}
+
+.kpi-title {
+  font-size:14px;
+  font-weight:bold;
+  color:#0d6efd;
+  text-transform:uppercase;
+  letter-spacing:.2px;
+}
+
+.kpi-periodo {
+  font-size:11px;
+  color:#495057;
+  background:#ffffff;
+  border:1px solid #d6e9ff;
+  border-radius:999px;
+  padding:3px 8px;
+  white-space:nowrap;
+}
+
+.kpi-principal {
+  background:#0d6efd;
+  color:white;
+  border-radius:12px;
+  padding:10px;
+  margin-bottom:9px;
+}
+
+.kpi-principal-label {
+  font-size:12px;
+  font-weight:bold;
+  opacity:.95;
+}
+
+.kpi-principal-valor {
+  font-size:26px;
+  font-weight:800;
+  line-height:1.1;
+  margin-top:2px;
+}
+
+.kpi-linea {
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-size:13px;
+  line-height:1.45;
+  padding:3px 0;
+  border-bottom:1px solid rgba(13,110,253,0.10);
+}
+
+.kpi-linea span:first-child {
+  font-weight:bold;
+  color:#333;
+}
+
+.kpi-linea span:last-child {
+  font-weight:bold;
+}
+
+.kpi-total {
+  margin-top:6px;
+  padding:8px;
+  border-radius:10px;
+  background:#ffffff;
+  border:1px solid #d6e9ff;
+}
+
+.kpi-total .kpi-linea {
+  border-bottom:0;
+  font-size:14px;
+}
+
+.kpi-total #totalMes {
+  color:#0d6efd;
+  font-size:18px;
+  font-weight:800;
+}
+
+.kpi-meta {
+  margin-top:8px;
+}
+
 .checklist-box {
   background:#fff;
   border:1px solid #ccc;
@@ -589,14 +684,38 @@ button {
     <div id="totalInfo" class="total-info">Sin resultados.</div>
   </div>
 
-  <div class="total-box">
-    <div class="total-label">Resumen comercial mes actual</div>
-    <div style="margin-top:8px;font-size:13px;line-height:1.45;">
-      <div><b>Venta mes:</b> <span id="ventaMes">$0</span></div>
-      <div><b>Guías sin facturar:</b> <span id="guiasSinFactura">$0</span></div>
-      <div><b>Total venta + guías:</b> <span id="totalMes" style="font-weight:bold;color:#0d6efd;">$0</span></div>
-      <div><b>Meta mes:</b> <span id="metaMes">$0</span></div>
-      <div><b>Cumplimiento:</b> <span id="cumplimientoMes" class="cumplimiento-kpi cumplimiento-neutral">0%</span></div>
+  <div class="total-box kpi-comercial">
+    <div class="kpi-header">
+      <div class="kpi-title">📈 Venta mes actual</div>
+      <div class="kpi-periodo">Mes actual</div>
+    </div>
+
+    <div class="kpi-principal">
+      <div class="kpi-principal-label">Venta facturada del mes</div>
+      <div id="ventaMes" class="kpi-principal-valor">$0</div>
+    </div>
+
+    <div class="kpi-linea">
+      <span>Guías sin facturar</span>
+      <span id="guiasSinFactura">$0</span>
+    </div>
+
+    <div class="kpi-total">
+      <div class="kpi-linea">
+        <span>Total comercial</span>
+        <span id="totalMes">$0</span>
+      </div>
+    </div>
+
+    <div class="kpi-meta">
+      <div class="kpi-linea">
+        <span>Meta mes</span>
+        <span id="metaMes">$0</span>
+      </div>
+      <div class="kpi-linea" style="border-bottom:0;">
+        <span>Cumplimiento</span>
+        <span id="cumplimientoMes" class="cumplimiento-kpi cumplimiento-neutral">0%</span>
+      </div>
     </div>
   </div>
 
