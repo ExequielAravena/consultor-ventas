@@ -687,12 +687,12 @@ button {
 
   <div class="total-box kpi-comercial">
     <div class="kpi-header">
-      <div class="kpi-title">📈 Venta periodo</div>
-      <div id="kpiPeriodo" class="kpi-periodo">Período seleccionado</div>
+      <div class="kpi-title">📈 Venta mes actual</div>
+      <div class="kpi-periodo">Mes en curso</div>
     </div>
 
     <div class="kpi-principal">
-      <div class="kpi-principal-label">Venta facturada del período</div>
+      <div class="kpi-principal-label">Venta facturada del mes</div>
       <div id="ventaMes" class="kpi-principal-valor">$0</div>
     </div>
 
@@ -710,7 +710,7 @@ button {
 
     <div class="kpi-meta">
       <div class="kpi-linea">
-        <span>Meta período</span>
+        <span>Meta mes</span>
         <span id="metaMes">$0</span>
       </div>
       <div class="kpi-linea" style="border-bottom:0;">
@@ -826,10 +826,7 @@ window.addEventListener("load", function(){
 
 ["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "pedidoDivisionVendedor", "chkCondicionTodas", "pedidoAccion"].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener("input", function(){
-            guardarFiltros();
-            if (id === "fechaDesde" || id === "fechaHasta") cargarResumenMes();
-        });
+        if (el) el.addEventListener("input", guardarFiltros);
     });
 
     const stockBuscar = document.getElementById("stockBuscar");
@@ -1905,27 +1902,17 @@ async function cargarResumenMes(){
     const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
     let slpCodeConsulta = "";
 
-    const desde = document.getElementById("fechaDesde")?.value || "";
-    const hasta = document.getElementById("fechaHasta")?.value || "";
-
-    if (!desde || !hasta) {
-        limpiarResumenMes();
-        actualizarEtiquetaPeriodo(desde, hasta);
-        return;
-    }
-
     if (rol === "ADMIN" || rol === "SUPERADMIN") {
         slpCodeConsulta = document.getElementById("slpCodeConsulta")?.value || "";
 
         if (!slpCodeConsulta) {
             limpiarResumenMes();
-            actualizarEtiquetaPeriodo(desde, hasta);
             return;
         }
     }
 
     try {
-        let url = `${API_RESUMEN_MES}?token=${encodeURIComponent(sesion.token)}&desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`;
+        let url = `${API_RESUMEN_MES}?token=${encodeURIComponent(sesion.token)}`;
 
         if (slpCodeConsulta) {
             url += `&slpCodeConsulta=${encodeURIComponent(slpCodeConsulta)}`;
@@ -1950,12 +1937,10 @@ async function cargarResumenMes(){
         document.getElementById("totalMes").textContent = "$" + formato(total);
         document.getElementById("metaMes").textContent = "$" + formato(metaMes);
         actualizarCumplimiento(cumplimiento, metaMes);
-        actualizarEtiquetaPeriodo(desde, hasta);
 
     } catch (e) {
         console.error(e);
         limpiarResumenMes();
-        actualizarEtiquetaPeriodo(desde, hasta);
     }
 }
 
@@ -1965,26 +1950,6 @@ function limpiarResumenMes(){
     document.getElementById("totalMes").textContent = "$0";
     document.getElementById("metaMes").textContent = "$0";
     actualizarCumplimiento(0, 0);
-}
-
-function actualizarEtiquetaPeriodo(desde, hasta){
-    const el = document.getElementById("kpiPeriodo");
-    if (!el) return;
-
-    if (!desde || !hasta) {
-        el.textContent = "Seleccione período";
-        return;
-    }
-
-    const fDesde = new Date(desde + "T00:00:00");
-    const fHasta = new Date(hasta + "T00:00:00");
-    const mismoMes = fDesde.getFullYear() === fHasta.getFullYear() && fDesde.getMonth() === fHasta.getMonth();
-
-    if (mismoMes) {
-        el.textContent = fDesde.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
-    } else {
-        el.textContent = desde.split("-").reverse().join("-") + " al " + hasta.split("-").reverse().join("-");
-    }
 }
 
 function actualizarCumplimiento(cumplimiento, metaMes){
@@ -2044,7 +2009,6 @@ function buscar(){
     });
 
     render(filtrado.slice(0,300), filtrado.length, calcularTotal(filtrado));
-    cargarResumenMes();
 
     document.getElementById("estado").textContent =
         data.length > 0
