@@ -392,15 +392,18 @@ button {
   letter-spacing:.2px;
 }
 
-.kpi-periodo {
+.kpi-periodo-select {
+  width:auto;
+  min-width:118px;
   font-size:11px;
   color:#495057;
   background:#ffffff;
   border:1px solid #d6e9ff;
   border-radius:999px;
-  padding:3px 8px;
+  padding:4px 8px;
+  margin-top:0;
   white-space:nowrap;
-  cursor:default;
+  font-weight:bold;
 }
 
 .kpi-principal {
@@ -687,12 +690,14 @@ button {
 
   <div class="total-box kpi-comercial">
     <div class="kpi-header">
-      <div class="kpi-title">📈 Venta mes actual</div>
-      <div class="kpi-periodo">Mes en curso</div>
+      <div class="kpi-title">📈 Período de venta</div>
+      <select id="periodoResumen" class="kpi-periodo-select" onchange="cargarResumenMes(); guardarFiltros();">
+        <option value="">Período actual</option>
+      </select>
     </div>
 
     <div class="kpi-principal">
-      <div class="kpi-principal-label">Venta facturada del mes</div>
+      <div class="kpi-principal-label">Venta facturada del período</div>
       <div id="ventaMes" class="kpi-principal-valor">$0</div>
     </div>
 
@@ -710,7 +715,7 @@ button {
 
     <div class="kpi-meta">
       <div class="kpi-linea">
-        <span>Meta mes</span>
+        <span>Meta período</span>
         <span id="metaMes">$0</span>
       </div>
       <div class="kpi-linea" style="border-bottom:0;">
@@ -819,12 +824,13 @@ const API_PEDIDOS_DIVISIONES = "https://api.cotaco.cl/api/pedidos/divisiones-ven
 const API_PEDIDOS_CONDICIONES = "https://api.cotaco.cl/api/pedidos/condiciones-despacho";
 
 window.addEventListener("load", function(){
+    cargarPeriodosResumen();
     cargarSesion();
     cargarBaseLocal();
     cargarFiltros();
     aplicarFechasInicialesSiCorresponde();
 
-["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "pedidoDivisionVendedor", "chkCondicionTodas", "pedidoAccion"].forEach(id => {
+["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "periodoResumen", "pedidoDivisionVendedor", "chkCondicionTodas", "pedidoAccion"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener("input", guardarFiltros);
     });
@@ -1782,6 +1788,7 @@ function guardarFiltros(){
         cliente: document.getElementById('cliente').value,
         producto: document.getElementById('producto').value,
         folio: document.getElementById('folio').value,
+        periodoResumen: document.getElementById('periodoResumen')?.value || '',
         pedidoDivisionVendedor: document.getElementById('pedidoDivisionVendedor')?.value || '',
         pedidoCondicionDespacho: obtenerValoresSeleccionados('pedidoCondicionDespacho'),
         pedidoAccion: document.getElementById('pedidoAccion')?.value || ''
@@ -1820,6 +1827,10 @@ function cargarFiltros(){
 
         document.getElementById('folio').value =
             filtros.folio || '';
+
+        if (document.getElementById('periodoResumen')) {
+            document.getElementById('periodoResumen').value = filtros.periodoResumen || '';
+        }
 
         if (document.getElementById('pedidoDivisionVendedor')) {
             document.getElementById('pedidoDivisionVendedor').value = filtros.pedidoDivisionVendedor || '';
@@ -1894,6 +1905,60 @@ function cumpleTexto(valor, busqueda){
     return palabras.length === 0 || palabras.every(p => valorNorm.includes(p));
 }
 
+function cargarPeriodosResumen(){
+    const combo = document.getElementById("periodoResumen");
+    if (!combo) return;
+
+    const valorActual = combo.value || "";
+    combo.innerHTML = "";
+
+    const hoy = new Date();
+
+    for (let i = 0; i < 13; i++) {
+        const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+        const ano = fecha.getFullYear();
+        const mes = fecha.getMonth() + 1;
+        const valor = ano + "-" + String(mes).padStart(2, "0");
+
+        const opt = document.createElement("option");
+        opt.value = valor;
+        opt.textContent = nombreMes(mes) + " " + ano;
+
+        combo.appendChild(opt);
+    }
+
+    if (valorActual && Array.from(combo.options).some(opt => opt.value === valorActual)) {
+        combo.value = valorActual;
+    }
+}
+
+function nombreMes(mes){
+    const nombres = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    return nombres[(Number(mes) || 1) - 1] || "";
+}
+
+function obtenerPeriodoResumen(){
+    const combo = document.getElementById("periodoResumen");
+    const valor = combo?.value || "";
+    const partes = valor.split("-");
+
+    if (partes.length !== 2) {
+        const hoy = new Date();
+        return {
+            ano: hoy.getFullYear(),
+            mes: hoy.getMonth() + 1
+        };
+    }
+
+    return {
+        ano: Number(partes[0]),
+        mes: Number(partes[1])
+    };
+}
+
 async function cargarResumenMes(){
     const sesion = obtenerSesion();
 
@@ -1912,7 +1977,8 @@ async function cargarResumenMes(){
     }
 
     try {
-        let url = `${API_RESUMEN_MES}?token=${encodeURIComponent(sesion.token)}`;
+        const periodo = obtenerPeriodoResumen();
+        let url = `${API_RESUMEN_MES}?token=${encodeURIComponent(sesion.token)}&ano=${encodeURIComponent(periodo.ano)}&mes=${encodeURIComponent(periodo.mes)}`;
 
         if (slpCodeConsulta) {
             url += `&slpCodeConsulta=${encodeURIComponent(slpCodeConsulta)}`;
