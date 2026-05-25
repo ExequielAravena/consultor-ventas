@@ -809,6 +809,8 @@ button {
 let data = [];
 
 const STORAGE_DATA = "ventas_offline_data_v1";
+const STORAGE_STOCK_DATA = "stock_offline_data_v1";
+const STORAGE_STOCK_FECHA = "stock_offline_fecha_v1";
 const STORAGE_FILTERS = "ventas_offline_filters_v1";
 const STORAGE_LOGIN = "ventas_offline_login_v1";
 
@@ -818,6 +820,7 @@ const API_CAMBIAR_PASSWORD = "https://api.cotaco.cl/api/cambiar-password";
 const API_ADMIN_RESET_PASSWORD = "https://api.cotaco.cl/api/admin/reset-password";
 const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 const API_STOCK = "https://api.cotaco.cl/api/bot/stock";
+const API_STOCK_SYNC = "https://api.cotaco.cl/api/stock-sync";
 const API_PEDIDOS = "https://api.cotaco.cl/api/pedidos-estado";
 const API_RESUMEN_MES = "https://api.cotaco.cl/api/bot/resumen-mes";
 const API_PEDIDOS_DIVISIONES = "https://api.cotaco.cl/api/pedidos/divisiones-vendedor";
@@ -1149,8 +1152,32 @@ async function consultarStock(){
         return;
     }
 
-    estado.textContent = "Consultando stock en SAP...";
     lista.innerHTML = "";
+
+    const stockLocal = obtenerStockLocal();
+
+    if (stockLocal.length > 0) {
+        const datosLocal = buscarStockEnBaseLocal(buscar, stockLocal);
+
+        if (!datosLocal || datosLocal.length === 0) {
+            estado.textContent = "Sin resultados en stock offline para: " + buscar + ".";
+            lista.innerHTML = '<div class="stock-card">Sin resultados en base local.</div>';
+            return;
+        }
+
+        const fechaStock = obtenerFechaStockLocal();
+        estado.textContent =
+            "Resultados en stock offline: " +
+            datosLocal.length.toLocaleString("es-CL") +
+            ". Base sincronizada: " +
+            fechaStock +
+            ".";
+
+        renderStock(datosLocal);
+        return;
+    }
+
+    estado.textContent = "Sin base local de stock. Consultando SAP en línea...";
 
     try {
         const resp = await fetch(API_STOCK + "?buscar=" + encodeURIComponent(buscar));
@@ -1168,50 +1195,134 @@ async function consultarStock(){
             return;
         }
 
-        estado.textContent = "Resultados encontrados: " + datos.length.toLocaleString("es-CL") + ".";
+        estado.textContent =
+            "Resultados encontrados en SAP: " +
+            datos.length.toLocaleString("es-CL") +
+            ". Para uso offline, sincronice SAP.";
 
-        lista.innerHTML = datos.map(x => {
+        renderStock(datos);
+
+    } catch (e) {
+        estado.textContent = "Sin conexión y sin base offline de stock.";
+        lista.innerHTML = '<div class="stock-card">No hay stock guardado offline. Sincronice SAP cuando tenga conexión.</div>';
+        alert("No se pudo consultar stock.\n\n" + e.message);
+    }
+}
+
+function renderStock(datos){
+    const lista = document.getElementById("stockLista");
+
+    lista.innerHTML = datos.map(x => {
+        const codigo = x.Codigo ?? x.codigo ?? "";
+        const producto = x.Producto ?? x.producto ?? "";
+        const bodega = x.Bodega ?? x.bodega ?? "";
+        const disponible = x.Disponible ?? x.disponible ?? 0;
+        const l1 = x.L1 ?? x.l1 ?? 0;
+        const l2 = x.L2 ?? x.l2 ?? 0;
+        const l3 = x.L3 ?? x.l3 ?? 0;
+        const com1 = x.Com1 ?? x.com1 ?? 0;
+        const com2 = x.Com2 ?? x.com2 ?? 0;
+        const com3 = x.Com3 ?? x.com3 ?? 0;
+
+        return `
+          <div class="stock-card">
+            <div class="stock-codigo">${esc(codigo)}</div>
+            <div class="stock-producto">${esc(producto)}</div>
+
+            <div class="stock-datos">
+              <div><b>Bodega:</b> ${esc(bodega)}</div>
+              <div><b>Disponible:</b> <span class="stock-disponible">${formato(disponible)}</span></div>
+            </div>
+
+            <div class="stock-precios">
+              <div><b>L1:</b> $${formato(l1)}</div>
+              <div><b>L2:</b> $${formato(l2)}</div>
+              <div><b>L3:</b> $${formato(l3)}</div>
+            </div>
+
+            <div class="stock-precios">
+              <div><b>Com1:</b> ${formato(com1)}</div>
+              <div><b>Com2:</b> ${formato(com2)}</div>
+              <div><b>Com3:</b> ${formato(com3)}</div>
+            </div>
+          </div>
+        `;
+    }).join("");
+}
+
+function obtenerStockLocal(){
+    try {
+        return JSON.parse(localStorage.getItem(STORAGE_STOCK_DATA) || "[]");
+    } catch {
+        localStorage.removeItem(STORAGE_STOCK_DATA);
+        localStorage.removeItem(STORAGE_STOCK_FECHA);
+        return [];
+    }
+}
+
+function obtenerFechaStockLocal(){
+    const fechaTxt = localStorage.getItem(STORAGE_STOCK_FECHA) || "";
+
+    if (!fechaTxt) return "sin fecha";
+
+    try {
+        const fecha = new Date(fechaTxt);
+        return fecha.toLocaleString("es-CL");
+    } catch {
+        return fechaTxt;
+    }
+}
+
+function buscarStockEnBaseLocal(buscar, baseStock){
+    const palabras = normalizar(buscar)
+        .replace(/,/g, ".")
+        .split(/\s+/)
+        .filter(Boolean);
+
+    if (palabras.length === 0) return [];
+
+    const buscarNorm = normalizar(buscar).replace(/,/g, ".");
+
+    return baseStock
+        .filter(x => {
             const codigo = x.Codigo ?? x.codigo ?? "";
             const producto = x.Producto ?? x.producto ?? "";
             const bodega = x.Bodega ?? x.bodega ?? "";
-            const disponible = x.Disponible ?? x.disponible ?? 0;
-            const l1 = x.L1 ?? x.l1 ?? 0;
-            const l2 = x.L2 ?? x.l2 ?? 0;
-            const l3 = x.L3 ?? x.l3 ?? 0;
-            const com1 = x.Com1 ?? x.com1 ?? 0;
-            const com2 = x.Com2 ?? x.com2 ?? 0;
-            const com3 = x.Com3 ?? x.com3 ?? 0;
 
-            return `
-              <div class="stock-card">
-                <div class="stock-codigo">${esc(codigo)}</div>
-                <div class="stock-producto">${esc(producto)}</div>
+            const texto = normalizar(codigo + " " + producto + " " + bodega).replace(/,/g, ".");
 
-                <div class="stock-datos">
-                  <div><b>Bodega:</b> ${esc(bodega)}</div>
-                  <div><b>Disponible:</b> <span class="stock-disponible">${formato(disponible)}</span></div>
-                </div>
+            return palabras.every(p => texto.includes(p));
+        })
+        .sort((a, b) => {
+            const codA = normalizar(a.Codigo ?? a.codigo ?? "").replace(/,/g, ".");
+            const codB = normalizar(b.Codigo ?? b.codigo ?? "").replace(/,/g, ".");
 
-                <div class="stock-precios">
-                  <div><b>L1:</b> $${formato(l1)}</div>
-                  <div><b>L2:</b> $${formato(l2)}</div>
-                  <div><b>L3:</b> $${formato(l3)}</div>
-                </div>
+            if (codA === buscarNorm && codB !== buscarNorm) return -1;
+            if (codB === buscarNorm && codA !== buscarNorm) return 1;
+            if (codA.includes(buscarNorm) && !codB.includes(buscarNorm)) return -1;
+            if (codB.includes(buscarNorm) && !codA.includes(buscarNorm)) return 1;
 
-                <div class="stock-precios">
-                  <div><b>Com1:</b> ${formato(com1)}</div>
-                  <div><b>Com2:</b> ${formato(com2)}</div>
-                  <div><b>Com3:</b> ${formato(com3)}</div>
-                </div>
-              </div>
-            `;
-        }).join("");
+            const prodA = normalizar(a.Producto ?? a.producto ?? "");
+            const prodB = normalizar(b.Producto ?? b.producto ?? "");
+            return prodA.localeCompare(prodB);
+        })
+        .slice(0, 50);
+}
 
-    } catch (e) {
-        estado.textContent = "Error consultando stock.";
-        lista.innerHTML = "";
-        alert("No se pudo consultar stock.\n\n" + e.message);
+async function sincronizarStockCompleto(token){
+    const resp = await fetch(API_STOCK_SYNC + "?token=" + encodeURIComponent(token));
+
+    if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(txt || "No se pudo sincronizar stock.");
     }
+
+    const stock = await resp.json();
+
+    localStorage.setItem(STORAGE_STOCK_DATA, JSON.stringify(stock));
+    localStorage.setItem(STORAGE_STOCK_FECHA, new Date().toISOString());
+
+    return Array.isArray(stock) ? stock.length : 0;
 }
 
 function limpiarStock(){
@@ -1646,6 +1757,8 @@ async function guardarNuevaPassword(){
 async function cerrarSesionSinConfirmar(){
     localStorage.removeItem(STORAGE_LOGIN);
     localStorage.removeItem(STORAGE_DATA);
+    localStorage.removeItem(STORAGE_STOCK_DATA);
+    localStorage.removeItem(STORAGE_STOCK_FECHA);
     localStorage.removeItem(STORAGE_FILTERS);
 
     data = [];
@@ -1718,9 +1831,32 @@ console.log("SlpCode consulta:", slpCodeConsulta);
         localStorage.setItem(STORAGE_DATA, JSON.stringify(data));
 
         estado.textContent =
-            "Base sincronizada desde SAP: " +
+            "Ventas sincronizadas: " +
             data.length.toLocaleString('es-CL') +
-            " registros.";
+            " registros. Sincronizando stock...";
+
+        let totalStock = 0;
+        let mensajeStock = "";
+
+        try {
+            totalStock = await sincronizarStockCompleto(sesion.token);
+            mensajeStock =
+                " Stock sincronizado: " +
+                totalStock.toLocaleString('es-CL') +
+                " registros.";
+        } catch (stockError) {
+            mensajeStock =
+                " Stock no sincronizado: " +
+                (stockError.message || "error desconocido") +
+                ".";
+            console.error(stockError);
+        }
+
+        estado.textContent =
+            "Base sincronizada desde SAP. Ventas: " +
+            data.length.toLocaleString('es-CL') +
+            " registros." +
+            mensajeStock;
 
         aplicarFechasBase();
         guardarFiltros();
@@ -1738,18 +1874,27 @@ function cargarBaseLocal(){
     const base = localStorage.getItem(STORAGE_DATA);
 
     if (!base) {
+        const stockLocal = obtenerStockLocal();
         const estado = document.getElementById("estado");
-        if (estado) estado.textContent = "Sin base local. Sincronice ventas desde SAP.";
+        if (estado) {
+            estado.textContent =
+                stockLocal.length > 0
+                ? "Sin base local de ventas. Stock offline disponible: " + stockLocal.length.toLocaleString('es-CL') + " registros."
+                : "Sin base local. Sincronice ventas y stock desde SAP.";
+        }
         return;
     }
 
     try {
         data = JSON.parse(base);
+        const stockLocal = obtenerStockLocal();
         const estado = document.getElementById("estado");
         if (estado) {
             estado.textContent =
-                "Base local cargada: " +
+                "Base local cargada. Ventas: " +
                 data.length.toLocaleString('es-CL') +
+                " registros. Stock: " +
+                stockLocal.length.toLocaleString('es-CL') +
                 " registros.";
         }
     } catch {
@@ -1764,6 +1909,8 @@ function borrarBase(){
     if (!confirm("¿Desea borrar la base local y filtros?")) return;
 
     localStorage.removeItem(STORAGE_DATA);
+    localStorage.removeItem(STORAGE_STOCK_DATA);
+    localStorage.removeItem(STORAGE_STOCK_FECHA);
     localStorage.removeItem(STORAGE_FILTERS);
 
     data = [];
@@ -1775,7 +1922,7 @@ function borrarBase(){
     document.getElementById('folio').value = '';
   document.getElementById('slpCodeConsulta').value = '';
 
-    document.getElementById("estado").textContent = "Base local eliminada.";
+    document.getElementById("estado").textContent = "Base local de ventas y stock eliminada.";
     render([], 0, 0);
     cargarResumenMes();
 }
