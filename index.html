@@ -2212,7 +2212,11 @@ function buscar(){
         const fecha = (x.Fecha || x.fecha || '').toString().substring(0,10);
         const cardName = x.CardName || x.cardName || '';
         const itemName = x.ItemName || x.itemName || '';
-        const folioDoc = x.Folio || x.folio || '';
+        const folioDoc = [
+            x.Folio ?? x.folio ?? '',
+            x.NumeroPedido ?? x.numeroPedido ?? '',
+            x.FolioGuia ?? x.folioGuia ?? ''
+        ].join(' ');
 
         return (!desde || fecha >= desde)
             && (!hasta || fecha <= hasta)
@@ -2253,6 +2257,10 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
     } else {
         lista.forEach(x => {
             const folio = x.Folio ?? x.folio ?? '';
+            const numeroDocumento = x.NumeroDocumento ?? x.numeroDocumento ?? '';
+            const numeroPedido = x.NumeroPedido ?? x.numeroPedido ?? '';
+            const folioGuia = x.FolioGuia ?? x.folioGuia ?? '';
+            const tipoDocumento = x.TipoDocumento ?? x.tipoDocumento ?? '';
             const fecha = x.Fecha ?? x.fecha ?? '';
             const cardName = x.CardName ?? x.cardName ?? '';
             const itemName = x.ItemName ?? x.itemName ?? '';
@@ -2261,18 +2269,26 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
             const totalLinea = x.TotalLinea ?? x.totalLinea ?? 0;
             const vendedor = x.Vendedor ?? x.vendedor ?? '';
             const url = limpiarUrl(x.UrlPdf || x.urlPdf || x["Link PDF"] || x["Link_PDF"] || '');
+            const urlGuia = limpiarUrl(x.UrlPdfGuia || x.urlPdfGuia || x.LinkPdfGuia || x.linkPdfGuia || x["Link_PDF_Guia"] || '');
+            const folioMostrar = folio || numeroDocumento || '';
+            const etiquetaDoc = (tipoDocumento || '').toUpperCase() === 'NOTA_CREDITO' ? 'NC' : 'Factura';
 
             html += `
             <div class="venta-card">
               <div class="venta-top">
                 <div>
-                  <div class="venta-folio">Folio ${folio}</div>
+                  <div class="venta-folio">
+                    ${esc(etiquetaDoc)} ${esc(folioMostrar)}
+                    ${numeroPedido ? ` <span style="color:#555;font-weight:bold;">| Pedido ${esc(numeroPedido)}</span>` : ''}
+                    ${folioGuia ? ` <span style="color:#555;font-weight:bold;">| Guía ${esc(folioGuia)}</span>` : ''}
+                  </div>
                   <div class="venta-fecha">${fecha}</div>
                 </div>
                 ${
-                  url
+                  (url || urlGuia)
                   ? `<div class="acciones-link">
-                       <button class="btn-copy" onclick="copiarLink('${esc(url)}')">Copiar link</button>
+                       ${url ? `<button class="btn-copy" onclick="copiarLink('${esc(url)}')">PDF factura</button>` : ''}
+                       ${urlGuia ? `<button class="btn-copy" onclick="copiarLink('${esc(urlGuia)}')">PDF guía</button>` : ''}
                      </div>`
                   : ''
                 }
@@ -2331,7 +2347,7 @@ async function copiarLink(url){
         await navigator.clipboard.writeText(url);
         alert("Link copiado. Abra una pestaña del navegador y péguelo para visualizar el PDF.");
     } catch {
-        alert("No se pudo copiar automáticamente. Revise el dato UrlPdf.");
+        alert("No se pudo copiar automáticamente. Revise el link del documento.");
     }
 }
 
