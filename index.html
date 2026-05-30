@@ -1216,6 +1216,8 @@ function renderStock(datos){
         const codigo = x.Codigo ?? x.codigo ?? "";
         const producto = x.Producto ?? x.producto ?? "";
         const bodega = x.Bodega ?? x.bodega ?? "";
+        const stockDefault = x.StockDefault ?? x.stockDefault ?? 0;
+        const comprometidoDefault = x.ComprometidoDefault ?? x.comprometidoDefault ?? 0;
         const disponible = x.Disponible ?? x.disponible ?? 0;
         const l1 = x.L1 ?? x.l1 ?? 0;
         const l2 = x.L2 ?? x.l2 ?? 0;
@@ -1230,7 +1232,9 @@ function renderStock(datos){
             <div class="stock-producto">${esc(producto)}</div>
 
             <div class="stock-datos">
-              <div><b>Bodega:</b> ${esc(bodega)}</div>
+              <div><b>Bodega default:</b> ${esc(bodega)}</div>
+              <div><b>Stock:</b> ${formato(stockDefault)}</div>
+              <div><b>Comprometido:</b> ${formato(comprometidoDefault)}</div>
               <div><b>Disponible:</b> <span class="stock-disponible">${formato(disponible)}</span></div>
             </div>
 
