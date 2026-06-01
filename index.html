@@ -1202,59 +1202,65 @@ async function consultarStock(){
     }
 
     lista.innerHTML = "";
-
-    const stockLocal = obtenerStockLocal();
-
-    if (stockLocal.length > 0) {
-        const datosLocal = buscarStockEnBaseLocal(buscar, stockLocal);
-
-        if (!datosLocal || datosLocal.length === 0) {
-            estado.textContent = "Sin resultados en stock offline para: " + buscar + ".";
-            lista.innerHTML = '<div class="stock-card">Sin resultados en base local.</div>';
-            return;
-        }
-
-        const fechaStock = obtenerFechaStockLocal();
-        estado.textContent =
-            "Resultados en stock offline: " +
-            datosLocal.length.toLocaleString("es-CL") +
-            ". Base sincronizada: " +
-            fechaStock +
-            ".";
-
-        renderStock(datosLocal);
-        return;
-    }
-
-    estado.textContent = "Sin base local de stock. Consultando SAP en línea...";
+    estado.textContent = "Consultando stock actualizado en SAP...";
 
     try {
-        const resp = await fetch(API_STOCK + "?buscar=" + encodeURIComponent(buscar));
+        const resp = await fetch(API_STOCK + "?buscar=" + encodeURIComponent(buscar), {
+            cache: "no-store"
+        });
 
         if (!resp.ok) {
             const txt = await resp.text();
-            throw new Error(txt || "No se pudo consultar stock.");
+            throw new Error(txt || "No se pudo consultar stock en SAP.");
         }
 
         const datos = await resp.json();
 
         if (!datos || datos.length === 0) {
-            estado.textContent = "Sin resultados para: " + buscar;
+            estado.textContent = "Sin resultados en SAP para: " + buscar + ".";
             lista.innerHTML = '<div class="stock-card">Sin resultados.</div>';
             return;
         }
 
         estado.textContent =
-            "Resultados encontrados en SAP: " +
+            "Resultados actualizados desde SAP: " +
             datos.length.toLocaleString("es-CL") +
-            ". Para uso offline, sincronice SAP.";
+            ". Consulta en línea.";
 
         renderStock(datos);
+        return;
 
     } catch (e) {
-        estado.textContent = "Sin conexión y sin base offline de stock.";
+        console.warn("No se pudo consultar SAP en línea. Se intentará usar stock offline.", e);
+
+        const stockLocal = obtenerStockLocal();
+
+        if (stockLocal.length > 0) {
+            const datosLocal = buscarStockEnBaseLocal(buscar, stockLocal);
+
+            if (!datosLocal || datosLocal.length === 0) {
+                estado.textContent =
+                    "Sin conexión a SAP y sin resultados en stock offline para: " + buscar + ".";
+                lista.innerHTML = '<div class="stock-card">Sin resultados en base local.</div>';
+                return;
+            }
+
+            const fechaStock = obtenerFechaStockLocal();
+
+            estado.textContent =
+                "SAP no disponible. Resultados en stock offline: " +
+                datosLocal.length.toLocaleString("es-CL") +
+                ". Base sincronizada: " +
+                fechaStock +
+                ".";
+
+            renderStock(datosLocal);
+            return;
+        }
+
+        estado.textContent = "Sin conexión a SAP y sin base offline de stock.";
         lista.innerHTML = '<div class="stock-card">No hay stock guardado offline. Sincronice SAP cuando tenga conexión.</div>';
-        alert("No se pudo consultar stock.\n\n" + e.message);
+        alert("No se pudo consultar stock en línea y no existe base offline.\n\n" + e.message);
     }
 }
 
