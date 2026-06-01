@@ -1696,9 +1696,19 @@ async function consultarPedidosGuias(){
         return;
     }
 
+    const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
+    const slpCodeConsulta = document.getElementById("slpCodeConsulta")?.value || "";
+
     const pedido = document.getElementById("pedidoGuiaBuscar").value.trim();
     const cliente = document.getElementById("pedidoGuiaCliente").value.trim();
     const producto = document.getElementById("pedidoGuiaProducto").value.trim();
+
+    if ((rol === "ADMIN" || rol === "SUPERADMIN") && !slpCodeConsulta) {
+        estadoDiv.textContent = "Debe seleccionar vendedor a consultar.";
+        lista.innerHTML = "";
+        alert("Debe seleccionar vendedor para consultar pedidos con guías.");
+        return;
+    }
 
     estadoDiv.textContent = "Consultando pedidos con guías no facturadas...";
     lista.innerHTML = "";
@@ -1706,6 +1716,11 @@ async function consultarPedidosGuias(){
     try {
         const params = new URLSearchParams();
         params.set("token", sesion.token);
+
+        if ((rol === "ADMIN" || rol === "SUPERADMIN") && slpCodeConsulta) {
+            params.set("slpCodeConsulta", slpCodeConsulta);
+        }
+
         params.set("pedido", pedido);
         params.set("cliente", cliente);
         params.set("producto", producto);
@@ -1787,6 +1802,10 @@ function renderPedidosGuias(lista){
             </div>
 
             <div class="pedido-cliente">${esc(codigoCliente)} · ${esc(cliente)}</div>
+
+            <div class="pedido-datos">
+              <div><b>Vendedor:</b> ${esc(x.Vendedor ?? x.vendedor ?? "")}</div>
+            </div>
 
             <div class="pedido-datos">
               <div><b>Dirección despacho:</b> ${esc(direccion || "Sin dirección informada")}</div>
