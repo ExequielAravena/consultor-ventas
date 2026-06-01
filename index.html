@@ -216,13 +216,17 @@ button {
 
 
 .menu-modulos {
-  display:flex;
-  gap:8px;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:6px;
   margin-top:8px;
 }
 
 .menu-modulos button {
-  flex:1;
+  width:100%;
+  padding:7px 4px;
+  font-size:11px;
+  line-height:1.15;
 }
 
 .modulo-activo {
@@ -630,7 +634,8 @@ button {
     <div class="menu-modulos">
       <button id="btnModuloVentas" class="modulo-activo" onclick="mostrarModulo('ventas')">Ventas</button>
       <button id="btnModuloStock" class="secundario" onclick="mostrarModulo('stock')">Stock</button>
-      <button id="btnModuloPedidos" class="secundario" onclick="mostrarModulo('pedidos')">Pedidos</button>
+      <button id="btnModuloPedidos" class="secundario" onclick="mostrarModulo('pedidos')">Pedidos sin guías</button>
+      <button id="btnModuloPedidosGuias" class="secundario" onclick="mostrarModulo('pedidosGuias')">Pedidos con guías</button>
     </div>
 
    <div id="adminBox" class="oculto">
@@ -803,6 +808,28 @@ button {
     <div id="pedidosLista" class="lista"></div>
   </div>
 
+  <div id="pedidosGuiasModulo" class="oculto">
+    <div class="card">
+      <label>N° Pedido</label>
+      <input type="text" id="pedidoGuiaBuscar" placeholder="Opcional. Ejemplo: 12345">
+
+      <label>Cliente</label>
+      <input type="text" id="pedidoGuiaCliente" placeholder="Opcional">
+
+      <label>Producto pendiente</label>
+      <input type="text" id="pedidoGuiaProducto" placeholder="Opcional">
+
+      <div class="botones">
+        <button onclick="consultarPedidosGuias()">Consultar pedidos con guías</button>
+        <button class="secundario" onclick="limpiarPedidosGuias()">Limpiar</button>
+      </div>
+
+      <div id="pedidosGuiasEstado" class="status">Consulte pedidos con guías no facturadas.</div>
+    </div>
+
+    <div id="pedidosGuiasLista" class="lista"></div>
+  </div>
+
 </div>
 
 <script>
@@ -822,6 +849,7 @@ const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
 const API_STOCK = "https://api.cotaco.cl/api/bot/stock";
 const API_STOCK_SYNC = "https://api.cotaco.cl/api/stock-sync";
 const API_PEDIDOS = "https://api.cotaco.cl/api/pedidos-estado";
+const API_PEDIDOS_GUIAS = "https://api.cotaco.cl/api/pedidos-con-guias";
 const API_RESUMEN_MES = "https://api.cotaco.cl/api/bot/resumen-mes";
 const API_PEDIDOS_DIVISIONES = "https://api.cotaco.cl/api/pedidos/divisiones-vendedor";
 const API_PEDIDOS_CONDICIONES = "https://api.cotaco.cl/api/pedidos/condiciones-despacho";
@@ -833,7 +861,7 @@ window.addEventListener("load", function(){
     cargarFiltros();
     aplicarFechasInicialesSiCorresponde();
 
-["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "periodoResumen", "pedidoDivisionVendedor", "chkCondicionTodas", "pedidoAccion"].forEach(id => {
+["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "periodoResumen", "pedidoDivisionVendedor", "chkCondicionTodas", "pedidoAccion", "pedidoGuiaBuscar", "pedidoGuiaCliente", "pedidoGuiaProducto"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener("input", guardarFiltros);
     });
@@ -851,6 +879,15 @@ window.addEventListener("load", function(){
         if (el) {
             el.addEventListener("keydown", function(e) {
                 if (e.key === "Enter") consultarPedidos();
+            });
+        }
+    });
+
+    ["pedidoGuiaBuscar", "pedidoGuiaCliente", "pedidoGuiaProducto"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("keydown", function(e) {
+                if (e.key === "Enter") consultarPedidosGuias();
             });
         }
     });
@@ -1100,17 +1137,21 @@ function mostrarModulo(modulo){
     const ventasModulo = document.getElementById("ventasModulo");
     const stockModulo = document.getElementById("stockModulo");
     const pedidosModulo = document.getElementById("pedidosModulo");
+    const pedidosGuiasModulo = document.getElementById("pedidosGuiasModulo");
+
     const btnVentas = document.getElementById("btnModuloVentas");
     const btnStock = document.getElementById("btnModuloStock");
     const btnPedidos = document.getElementById("btnModuloPedidos");
+    const btnPedidosGuias = document.getElementById("btnModuloPedidosGuias");
 
-    if (!ventasModulo || !stockModulo || !pedidosModulo) return;
+    if (!ventasModulo || !stockModulo || !pedidosModulo || !pedidosGuiasModulo) return;
 
     ventasModulo.classList.add("oculto");
     stockModulo.classList.add("oculto");
     pedidosModulo.classList.add("oculto");
+    pedidosGuiasModulo.classList.add("oculto");
 
-    [btnVentas, btnStock, btnPedidos].forEach(btn => {
+    [btnVentas, btnStock, btnPedidos, btnPedidosGuias].forEach(btn => {
         if (!btn) return;
         btn.classList.remove("modulo-activo");
         btn.classList.add("secundario");
@@ -1131,6 +1172,14 @@ function mostrarModulo(modulo){
             btnPedidos.classList.remove("secundario");
         }
         const input = document.getElementById("pedidoBuscar");
+        if (input) input.focus();
+    } else if (modulo === "pedidosGuias") {
+        pedidosGuiasModulo.classList.remove("oculto");
+        if (btnPedidosGuias) {
+            btnPedidosGuias.classList.add("modulo-activo");
+            btnPedidosGuias.classList.remove("secundario");
+        }
+        const input = document.getElementById("pedidoGuiaBuscar");
         if (input) input.focus();
     } else {
         ventasModulo.classList.remove("oculto");
@@ -1635,6 +1684,135 @@ function renderPedidos(lista){
         `;
     }).join("");
 }
+
+async function consultarPedidosGuias(){
+    const sesion = obtenerSesion();
+    const estadoDiv = document.getElementById("pedidosGuiasEstado");
+    const lista = document.getElementById("pedidosGuiasLista");
+
+    if (!sesion.token) {
+        alert("Debe iniciar sesión.");
+        cargarSesion();
+        return;
+    }
+
+    const pedido = document.getElementById("pedidoGuiaBuscar").value.trim();
+    const cliente = document.getElementById("pedidoGuiaCliente").value.trim();
+    const producto = document.getElementById("pedidoGuiaProducto").value.trim();
+
+    estadoDiv.textContent = "Consultando pedidos con guías no facturadas...";
+    lista.innerHTML = "";
+
+    try {
+        const params = new URLSearchParams();
+        params.set("token", sesion.token);
+        params.set("pedido", pedido);
+        params.set("cliente", cliente);
+        params.set("producto", producto);
+
+        const url = API_PEDIDOS_GUIAS + "?" + params.toString();
+
+        console.log("URL pedidos con guías:", url);
+
+        const resp = await fetch(url);
+
+        if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(txt || "No se pudo consultar pedidos con guías.");
+        }
+
+        const datos = await resp.json();
+
+        if (!datos || datos.length === 0) {
+            estadoDiv.textContent = "Sin pedidos con guías no facturadas para los filtros indicados.";
+            lista.innerHTML = '<div class="pedido-card">Sin resultados.</div>';
+            return;
+        }
+
+        estadoDiv.textContent = "Pedidos con guías encontrados: " + datos.length.toLocaleString("es-CL") + ". Mostrando máximo 300 líneas.";
+        renderPedidosGuias(datos);
+
+    } catch (e) {
+        estadoDiv.textContent = "Error consultando pedidos con guías.";
+        lista.innerHTML = "";
+        alert("No se pudo consultar pedidos con guías.\n\n" + e.message);
+    }
+}
+
+function limpiarPedidosGuias(){
+    document.getElementById("pedidoGuiaBuscar").value = "";
+    document.getElementById("pedidoGuiaCliente").value = "";
+    document.getElementById("pedidoGuiaProducto").value = "";
+    document.getElementById("pedidosGuiasEstado").textContent = "Consulte pedidos con guías no facturadas.";
+    document.getElementById("pedidosGuiasLista").innerHTML = "";
+    guardarFiltros();
+    document.getElementById("pedidoGuiaBuscar").focus();
+}
+
+function renderPedidosGuias(lista){
+    const contenedor = document.getElementById("pedidosGuiasLista");
+
+    contenedor.innerHTML = lista.map(x => {
+        const estado = x.EstadoDespacho ?? x.estadoDespacho ?? "";
+        const badge = estado === "TOTAL" ? "badge-ok" : "badge-warn";
+
+        const pedido = x.Pedido ?? x.pedido ?? "";
+        const fechaPedido = x.FechaPedido ?? x.fechaPedido ?? "";
+        const folioGuia = x.FolioGuia ?? x.folioGuia ?? "";
+        const fechaDespacho = x.FechaDespacho ?? x.fechaDespacho ?? "";
+
+        const cliente = x.NombreCliente ?? x.nombreCliente ?? "";
+        const codigoCliente = x.CodigoCliente ?? x.codigoCliente ?? "";
+
+        const direccion = [
+            x.CalleDespacho ?? x.calleDespacho ?? "",
+            x.BlockDespacho ?? x.blockDespacho ?? "",
+            x.CiudadDespacho ?? x.ciudadDespacho ?? "",
+            x.ComunaDespacho ?? x.comunaDespacho ?? "",
+            x.RegionDespacho ?? x.regionDespacho ?? ""
+        ].filter(v => (v || "").toString().trim() !== "").join(", ");
+
+        const productoPendiente = x.ProductoPendiente ?? x.productoPendiente ?? "";
+        const codigoProductoPendiente = x.CodigoProductoPendiente ?? x.codigoProductoPendiente ?? "";
+        const cantidadPendiente = x.CantidadPendiente ?? x.cantidadPendiente ?? 0;
+
+        return `
+          <div class="pedido-card">
+            <div class="pedido-top">
+              <div>
+                <div class="pedido-numero">Pedido ${esc(pedido)} · Guía ${esc(folioGuia)}</div>
+                <div class="pedido-fecha">Pedido: ${esc(fechaPedido)} · Despacho: ${esc(fechaDespacho)}</div>
+              </div>
+              <div class="badge-estado ${badge}">${esc(estado)}</div>
+            </div>
+
+            <div class="pedido-cliente">${esc(codigoCliente)} · ${esc(cliente)}</div>
+
+            <div class="pedido-datos">
+              <div><b>Dirección despacho:</b> ${esc(direccion || "Sin dirección informada")}</div>
+            </div>
+
+            ${
+                estado === "PARCIAL"
+                ? `
+                  <div class="pedido-producto">
+                    <b>Pendiente:</b> ${esc(codigoProductoPendiente)} · ${esc(productoPendiente)}
+                  </div>
+                  <div class="pedido-datos">
+                    <div><b>Cantidad pendiente:</b> ${formato(cantidadPendiente)}</div>
+                  </div>
+                `
+                : `
+                  <div class="pedido-datos">
+                    <div><b>Estado:</b> Pedido despachado total con guía pendiente de facturación.</div>
+                  </div>
+                `
+            }
+          </div>
+        `;
+    }).join("");
+}
+
 function textoAccionPedido(accion){
     const a = (accion || "").toUpperCase();
 
@@ -1942,7 +2120,10 @@ function guardarFiltros(){
         periodoResumen: document.getElementById('periodoResumen')?.value || '',
         pedidoDivisionVendedor: document.getElementById('pedidoDivisionVendedor')?.value || '',
         pedidoCondicionDespacho: obtenerValoresSeleccionados('pedidoCondicionDespacho'),
-        pedidoAccion: document.getElementById('pedidoAccion')?.value || ''
+        pedidoAccion: document.getElementById('pedidoAccion')?.value || '',
+        pedidoGuiaBuscar: document.getElementById('pedidoGuiaBuscar')?.value || '',
+        pedidoGuiaCliente: document.getElementById('pedidoGuiaCliente')?.value || '',
+        pedidoGuiaProducto: document.getElementById('pedidoGuiaProducto')?.value || ''
     };
 
     try {
@@ -1993,6 +2174,18 @@ function cargarFiltros(){
 
         if (document.getElementById('pedidoAccion')) {
             document.getElementById('pedidoAccion').value = filtros.pedidoAccion || '';
+        }
+
+        if (document.getElementById('pedidoGuiaBuscar')) {
+            document.getElementById('pedidoGuiaBuscar').value = filtros.pedidoGuiaBuscar || '';
+        }
+
+        if (document.getElementById('pedidoGuiaCliente')) {
+            document.getElementById('pedidoGuiaCliente').value = filtros.pedidoGuiaCliente || '';
+        }
+
+        if (document.getElementById('pedidoGuiaProducto')) {
+            document.getElementById('pedidoGuiaProducto').value = filtros.pedidoGuiaProducto || '';
         }
 
     } catch {
