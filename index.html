@@ -217,7 +217,7 @@ button {
 
 .menu-modulos {
   display:grid;
-  grid-template-columns:repeat(4, 1fr);
+  grid-template-columns:repeat(auto-fit, minmax(86px, 1fr));
   gap:6px;
   margin-top:8px;
 }
@@ -552,6 +552,147 @@ button {
   color:#495057;
 }
 
+
+.dashboard-grid {
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:8px;
+  max-width:1100px;
+  margin:0 auto 8px auto;
+}
+
+.dashboard-kpi {
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  padding:10px;
+  border-left:4px solid #0d6efd;
+}
+
+.dashboard-kpi-label {
+  font-size:11px;
+  color:#666;
+  font-weight:bold;
+  text-transform:uppercase;
+  letter-spacing:.2px;
+}
+
+.dashboard-kpi-value {
+  margin-top:4px;
+  font-size:20px;
+  font-weight:800;
+  color:#0d6efd;
+  line-height:1.15;
+}
+
+.dashboard-kpi-sub {
+  margin-top:3px;
+  font-size:11px;
+  color:#666;
+}
+
+.dashboard-section-title {
+  max-width:1100px;
+  margin:10px auto 6px auto;
+  font-size:15px;
+  color:#0d6efd;
+  font-weight:bold;
+}
+
+.dashboard-chart {
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  padding:10px;
+  max-width:1100px;
+  margin:0 auto 8px auto;
+}
+
+.dashboard-chart svg {
+  width:100%;
+  height:auto;
+  display:block;
+}
+
+.dashboard-legend {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  font-size:12px;
+  margin-top:6px;
+  color:#555;
+}
+
+.legend-item {
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.legend-line {
+  width:18px;
+  height:4px;
+  border-radius:99px;
+  display:inline-block;
+}
+
+.legend-actual { background:#0d6efd; }
+.legend-anterior { background:#6c757d; }
+
+.dashboard-table-wrap {
+  max-width:1100px;
+  margin:0 auto 8px auto;
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  overflow-x:auto;
+}
+
+.dashboard-table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+  padding:7px 8px;
+  border-bottom:1px solid #e9ecef;
+  text-align:right;
+  white-space:nowrap;
+}
+
+.dashboard-table th:first-child,
+.dashboard-table td:first-child {
+  text-align:left;
+}
+
+.dashboard-table th {
+  background:#f1f5fb;
+  color:#0d6efd;
+  font-size:11px;
+  text-transform:uppercase;
+}
+
+.dashboard-table tr:last-child td {
+  border-bottom:0;
+}
+
+.dashboard-status {
+  max-width:1100px;
+  margin:0 auto 8px auto;
+}
+
+@media (max-width: 700px) {
+  .dashboard-grid {
+    grid-template-columns:1fr 1fr;
+  }
+
+  .dashboard-kpi-value {
+    font-size:17px;
+  }
+}
+
 @media (max-width: 700px) {
   .resumen-grid {
     grid-template-columns:1fr;
@@ -636,6 +777,7 @@ button {
       <button id="btnModuloStock" class="secundario" onclick="mostrarModulo('stock')">Stock</button>
       <button id="btnModuloPedidos" class="secundario" onclick="mostrarModulo('pedidos')">Pedidos sin guías</button>
       <button id="btnModuloPedidosGuias" class="secundario" onclick="mostrarModulo('pedidosGuias')">Pedidos con guías</button>
+      <button id="btnModuloDashboard" class="secundario oculto" onclick="mostrarModulo('dashboard')">Dashboard</button>
     </div>
 
    <div id="adminBox" class="oculto">
@@ -828,6 +970,47 @@ button {
     </div>
 
     <div id="pedidosGuiasLista" class="lista"></div>
+
+  </div>
+
+  <div id="dashboardModulo" class="oculto">
+    <div class="card">
+      <div class="kpi-header">
+        <div>
+          <div class="kpi-title">📊 Dashboard ADMIN</div>
+          <div class="filtro-ayuda">Resumen comercial consolidado para ADMIN y SUPERADMIN.</div>
+        </div>
+        <select id="dashboardPeriodo" class="kpi-periodo-select" onchange="cargarDashboard(); guardarFiltros();">
+          <option value="">Período actual</option>
+        </select>
+      </div>
+
+      <div class="botones">
+        <button onclick="cargarDashboard()">Actualizar dashboard</button>
+      </div>
+
+      <div id="dashboardEstado" class="status dashboard-status">Seleccione período y actualice dashboard.</div>
+    </div>
+
+    <div id="dashboardKpis" class="dashboard-grid"></div>
+
+    <div class="dashboard-section-title">Evolución mensual año actual vs año anterior</div>
+    <div class="dashboard-chart">
+      <div id="dashboardChart"></div>
+      <div class="dashboard-legend">
+        <div class="legend-item"><span class="legend-line legend-actual"></span> Año actual</div>
+        <div class="legend-item"><span class="legend-line legend-anterior"></span> Año anterior</div>
+      </div>
+    </div>
+
+    <div class="dashboard-section-title">Resumen por división vendedor</div>
+    <div id="dashboardDivisionesVendedor" class="dashboard-table-wrap"></div>
+
+    <div class="dashboard-section-title">Resumen por división producto</div>
+    <div id="dashboardDivisionesProducto" class="dashboard-table-wrap"></div>
+
+    <div class="dashboard-section-title">Top vendedores</div>
+    <div id="dashboardVendedores" class="dashboard-table-wrap"></div>
   </div>
 
 </div>
@@ -841,27 +1024,38 @@ const STORAGE_STOCK_FECHA = "stock_offline_fecha_v1";
 const STORAGE_FILTERS = "ventas_offline_filters_v1";
 const STORAGE_LOGIN = "ventas_offline_login_v1";
 
-const API_LOGIN = "https://api.cotaco.cl/api/login";
-const API_SYNC = "https://api.cotaco.cl/api/ventas-historicas-sync";
-const API_CAMBIAR_PASSWORD = "https://api.cotaco.cl/api/cambiar-password";
-const API_ADMIN_RESET_PASSWORD = "https://api.cotaco.cl/api/admin/reset-password";
-const API_VENDEDORES = "https://api.cotaco.cl/api/vendedores";
-const API_STOCK = "https://api.cotaco.cl/api/bot/stock";
-const API_STOCK_SYNC = "https://api.cotaco.cl/api/stock-sync";
-const API_PEDIDOS = "https://api.cotaco.cl/api/pedidos-estado";
-const API_PEDIDOS_GUIAS = "https://api.cotaco.cl/api/pedidos-con-guias";
-const API_RESUMEN_MES = "https://api.cotaco.cl/api/bot/resumen-mes";
-const API_PEDIDOS_DIVISIONES = "https://api.cotaco.cl/api/pedidos/divisiones-vendedor";
-const API_PEDIDOS_CONDICIONES = "https://api.cotaco.cl/api/pedidos/condiciones-despacho";
+const API_BASE =
+    (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+    ? "http://localhost:5178"
+    : "https://api.cotaco.cl";
+
+const API_LOGIN = API_BASE + "/api/login";
+const API_SYNC = API_BASE + "/api/ventas-historicas-sync";
+const API_CAMBIAR_PASSWORD = API_BASE + "/api/cambiar-password";
+const API_ADMIN_RESET_PASSWORD = API_BASE + "/api/admin/reset-password";
+const API_VENDEDORES = API_BASE + "/api/vendedores";
+const API_STOCK = API_BASE + "/api/bot/stock";
+const API_STOCK_SYNC = API_BASE + "/api/stock-sync";
+const API_PEDIDOS = API_BASE + "/api/pedidos-estado";
+const API_PEDIDOS_GUIAS = API_BASE + "/api/pedidos-con-guias";
+const API_RESUMEN_MES = API_BASE + "/api/bot/resumen-mes";
+const API_PEDIDOS_DIVISIONES = API_BASE + "/api/pedidos/divisiones-vendedor";
+const API_PEDIDOS_CONDICIONES = API_BASE + "/api/pedidos/condiciones-despacho";
+const API_DASHBOARD_KPIS = API_BASE + "/api/dashboard/kpis";
+const API_DASHBOARD_DIVISIONES_VENDEDOR = API_BASE + "/api/dashboard/divisiones-vendedor";
+const API_DASHBOARD_VENDEDORES = API_BASE + "/api/dashboard/vendedores";
+const API_DASHBOARD_DIVISIONES_PRODUCTO = API_BASE + "/api/dashboard/divisiones-producto";
+const API_DASHBOARD_EVOLUCION_MENSUAL = API_BASE + "/api/dashboard/evolucion-mensual";
 
 window.addEventListener("load", function(){
     cargarPeriodosResumen();
+    cargarPeriodosDashboard();
     cargarSesion();
     cargarBaseLocal();
     cargarFiltros();
     aplicarFechasInicialesSiCorresponde();
 
-["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "periodoResumen", "pedidoDivisionVendedor", "chkCondicionTodas", "pedidoAccion", "pedidoGuiaBuscar", "pedidoGuiaCliente", "pedidoGuiaProducto"].forEach(id => {
+["fechaDesde", "fechaHasta", "cliente", "producto", "folio", "slpCodeConsulta", "periodoResumen", "pedidoDivisionVendedor", "chkCondicionTodas", "pedidoAccion", "pedidoGuiaBuscar", "pedidoGuiaCliente", "pedidoGuiaProducto", "dashboardPeriodo"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener("input", guardarFiltros);
     });
@@ -883,7 +1077,7 @@ window.addEventListener("load", function(){
         }
     });
 
-    ["pedidoGuiaBuscar", "pedidoGuiaCliente", "pedidoGuiaProducto"].forEach(id => {
+    ["pedidoGuiaBuscar", "pedidoGuiaCliente", "pedidoGuiaProducto", "dashboardPeriodo"].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener("keydown", function(e) {
@@ -991,12 +1185,16 @@ function aplicarSesion(sesion){
         sesion.rol || sesion.Rol || "";
 
     const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
+    const btnDashboard = document.getElementById("btnModuloDashboard");
 
     if (rol === "ADMIN" || rol === "SUPERADMIN") {
         document.getElementById("adminBox").classList.remove("oculto");
+        if (btnDashboard) btnDashboard.classList.remove("oculto");
         cargarVendedoresAdmin();
+        cargarDashboard();
     } else {
         document.getElementById("adminBox").classList.add("oculto");
+        if (btnDashboard) btnDashboard.classList.add("oculto");
         document.getElementById("slpCodeConsulta").value = "";
         cargarResumenMes();
         cargarCombosPedidos();
@@ -1138,20 +1336,23 @@ function mostrarModulo(modulo){
     const stockModulo = document.getElementById("stockModulo");
     const pedidosModulo = document.getElementById("pedidosModulo");
     const pedidosGuiasModulo = document.getElementById("pedidosGuiasModulo");
+    const dashboardModulo = document.getElementById("dashboardModulo");
 
     const btnVentas = document.getElementById("btnModuloVentas");
     const btnStock = document.getElementById("btnModuloStock");
     const btnPedidos = document.getElementById("btnModuloPedidos");
     const btnPedidosGuias = document.getElementById("btnModuloPedidosGuias");
+    const btnDashboard = document.getElementById("btnModuloDashboard");
 
-    if (!ventasModulo || !stockModulo || !pedidosModulo || !pedidosGuiasModulo) return;
+    if (!ventasModulo || !stockModulo || !pedidosModulo || !pedidosGuiasModulo || !dashboardModulo) return;
 
     ventasModulo.classList.add("oculto");
     stockModulo.classList.add("oculto");
     pedidosModulo.classList.add("oculto");
     pedidosGuiasModulo.classList.add("oculto");
+    dashboardModulo.classList.add("oculto");
 
-    [btnVentas, btnStock, btnPedidos, btnPedidosGuias].forEach(btn => {
+    [btnVentas, btnStock, btnPedidos, btnPedidosGuias, btnDashboard].forEach(btn => {
         if (!btn) return;
         btn.classList.remove("modulo-activo");
         btn.classList.add("secundario");
@@ -1181,6 +1382,13 @@ function mostrarModulo(modulo){
         }
         const input = document.getElementById("pedidoGuiaBuscar");
         if (input) input.focus();
+    } else if (modulo === "dashboard") {
+        dashboardModulo.classList.remove("oculto");
+        if (btnDashboard) {
+            btnDashboard.classList.add("modulo-activo");
+            btnDashboard.classList.remove("secundario");
+        }
+        cargarDashboard();
     } else {
         ventasModulo.classList.remove("oculto");
         if (btnVentas) {
@@ -2148,7 +2356,8 @@ function guardarFiltros(){
         pedidoAccion: document.getElementById('pedidoAccion')?.value || '',
         pedidoGuiaBuscar: document.getElementById('pedidoGuiaBuscar')?.value || '',
         pedidoGuiaCliente: document.getElementById('pedidoGuiaCliente')?.value || '',
-        pedidoGuiaProducto: document.getElementById('pedidoGuiaProducto')?.value || ''
+        pedidoGuiaProducto: document.getElementById('pedidoGuiaProducto')?.value || '',
+        dashboardPeriodo: document.getElementById('dashboardPeriodo')?.value || ''
     };
 
     try {
@@ -2211,6 +2420,10 @@ function cargarFiltros(){
 
         if (document.getElementById('pedidoGuiaProducto')) {
             document.getElementById('pedidoGuiaProducto').value = filtros.pedidoGuiaProducto || '';
+        }
+
+        if (document.getElementById('dashboardPeriodo')) {
+            document.getElementById('dashboardPeriodo').value = filtros.dashboardPeriodo || '';
         }
 
     } catch {
@@ -2299,6 +2512,53 @@ function cargarPeriodosResumen(){
     if (valorActual && Array.from(combo.options).some(opt => opt.value === valorActual)) {
         combo.value = valorActual;
     }
+}
+
+
+function cargarPeriodosDashboard(){
+    const combo = document.getElementById("dashboardPeriodo");
+    if (!combo) return;
+
+    const valorActual = combo.value || "";
+    combo.innerHTML = "";
+
+    const hoy = new Date();
+
+    for (let i = 0; i < 13; i++) {
+        const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+        const ano = fecha.getFullYear();
+        const mes = fecha.getMonth() + 1;
+        const valor = ano + "-" + String(mes).padStart(2, "0");
+
+        const opt = document.createElement("option");
+        opt.value = valor;
+        opt.textContent = nombreMes(mes) + " " + ano;
+
+        combo.appendChild(opt);
+    }
+
+    if (valorActual && Array.from(combo.options).some(opt => opt.value === valorActual)) {
+        combo.value = valorActual;
+    }
+}
+
+function obtenerPeriodoDashboard(){
+    const combo = document.getElementById("dashboardPeriodo");
+    const valor = combo?.value || "";
+    const partes = valor.split("-");
+
+    if (partes.length !== 2) {
+        const hoy = new Date();
+        return {
+            ano: hoy.getFullYear(),
+            mes: hoy.getMonth() + 1
+        };
+    }
+
+    return {
+        ano: Number(partes[0]),
+        mes: Number(partes[1])
+    };
 }
 
 function nombreMes(mes){
@@ -2537,6 +2797,290 @@ function render(lista, totalEncontrados = 0, totalVenta = 0){
         ? "Registros encontrados: " + formato(totalEncontrados) + ". Mostrando: " + formato(lista.length) + "."
         : "Sin resultados.";
 }
+
+
+async function cargarDashboard(){
+    const sesion = obtenerSesion();
+    const estado = document.getElementById("dashboardEstado");
+
+    if (!sesion.token) return;
+
+    const rol = (sesion.rol || sesion.Rol || "").toUpperCase();
+    if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
+        if (estado) estado.textContent = "Dashboard disponible solo para ADMIN y SUPERADMIN.";
+        return;
+    }
+
+    const periodo = obtenerPeriodoDashboard();
+
+    if (estado) estado.textContent = "Cargando dashboard...";
+
+    try {
+        const paramsMes = `token=${encodeURIComponent(sesion.token)}&ano=${encodeURIComponent(periodo.ano)}&mes=${encodeURIComponent(periodo.mes)}`;
+        const paramsAno = `token=${encodeURIComponent(sesion.token)}&ano=${encodeURIComponent(periodo.ano)}`;
+
+        const [
+            kpisResp,
+            divVendResp,
+            vendedoresResp,
+            divProdResp,
+            evolucionResp
+        ] = await Promise.all([
+            fetch(`${API_DASHBOARD_KPIS}?${paramsMes}`, { cache:"no-store" }),
+            fetch(`${API_DASHBOARD_DIVISIONES_VENDEDOR}?${paramsMes}`, { cache:"no-store" }),
+            fetch(`${API_DASHBOARD_VENDEDORES}?${paramsMes}`, { cache:"no-store" }),
+            fetch(`${API_DASHBOARD_DIVISIONES_PRODUCTO}?${paramsMes}`, { cache:"no-store" }),
+            fetch(`${API_DASHBOARD_EVOLUCION_MENSUAL}?${paramsAno}`, { cache:"no-store" })
+        ]);
+
+        const respuestas = [kpisResp, divVendResp, vendedoresResp, divProdResp, evolucionResp];
+        const error = respuestas.find(r => !r.ok);
+        if (error) {
+            throw new Error("HTTP " + error.status);
+        }
+
+        const kpis = await kpisResp.json();
+        const divVend = await divVendResp.json();
+        const vendedores = await vendedoresResp.json();
+        const divProd = await divProdResp.json();
+        const evolucion = await evolucionResp.json();
+
+        renderDashboardKpis(kpis);
+        renderDashboardEvolucion(evolucion);
+        renderDashboardDivisionesVendedor(divVend);
+        renderDashboardDivisionesProducto(divProd);
+        renderDashboardVendedores(vendedores);
+
+        if (estado) {
+            estado.textContent =
+                "Dashboard actualizado: " +
+                nombreMes(periodo.mes) + " " + periodo.ano +
+                ". Vendedores: " + (Array.isArray(vendedores) ? vendedores.length : 0).toLocaleString("es-CL") + ".";
+        }
+
+    } catch (e) {
+        console.error("Error cargando dashboard", e);
+        if (estado) estado.textContent = "Error cargando dashboard.";
+        alert("No se pudo cargar dashboard.\n\n" + e.message);
+    }
+}
+
+function renderDashboardKpis(k){
+    const box = document.getElementById("dashboardKpis");
+    if (!box) return;
+
+    const venta = k.ventaRealMes ?? k.VentaRealMes ?? 0;
+    const metaVend = k.metaVendedores ?? k.MetaVendedores ?? 0;
+    const cumpVend = k.cumplimientoMetaVendedores ?? k.CumplimientoMetaVendedores ?? 0;
+    const margen = k.margenMes ?? k.MargenMes ?? 0;
+    const margenPct = k.margenPctMes ?? k.MargenPctMes ?? 0;
+    const ventaLY = k.ventaLY ?? k.VentaLY ?? 0;
+    const varLY = k.variacionLY ?? k.VariacionLY ?? 0;
+    const metaDiv = k.metaDivisionProducto ?? k.MetaDivisionProducto ?? 0;
+    const cumpDiv = k.cumplimientoMetaDivision ?? k.CumplimientoMetaDivision ?? 0;
+
+    box.innerHTML = [
+        cardDashboardKpi("Venta real mes", "$" + formato(venta), "Facturas, NC y guías abiertas"),
+        cardDashboardKpi("Meta vendedores", "$" + formato(metaVend), cumplimientoBadgeTexto(cumpVend)),
+        cardDashboardKpi("Cumplimiento vendedores", formatoPct(cumpVend), "Venta / meta vendedores"),
+        cardDashboardKpi("Margen mes", "$" + formato(margen), formatoPct(margenPct) + " margen"),
+        cardDashboardKpi("Venta LY", "$" + formato(ventaLY), "Mismo mes año anterior"),
+        cardDashboardKpi("Variación LY", formatoPct(varLY), "Actual vs LY"),
+        cardDashboardKpi("Meta división producto", "$" + formato(metaDiv), cumplimientoBadgeTexto(cumpDiv)),
+        cardDashboardKpi("Cumplimiento división", formatoPct(cumpDiv), "Venta / meta división")
+    ].join("");
+}
+
+function cardDashboardKpi(label, value, sub){
+    return `
+      <div class="dashboard-kpi">
+        <div class="dashboard-kpi-label">${esc(label)}</div>
+        <div class="dashboard-kpi-value">${esc(value)}</div>
+        <div class="dashboard-kpi-sub">${sub || ""}</div>
+      </div>
+    `;
+}
+
+function cumplimientoBadgeTexto(valor){
+    const clase = claseCumplimiento(valor);
+    return `<span class="cumplimiento-kpi ${clase}">${formatoPct(valor)}</span>`;
+}
+
+function claseCumplimiento(valor){
+    const v = Number(valor || 0);
+    if (v >= 100) return "cumplimiento-ok";
+    if (v >= 80) return "cumplimiento-warn";
+    if (v > 0) return "cumplimiento-danger";
+    return "cumplimiento-neutral";
+}
+
+function formatoPct(valor){
+    const n = Number(valor || 0);
+    return n.toLocaleString("es-CL", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + "%";
+}
+
+function renderDashboardEvolucion(datos){
+    const box = document.getElementById("dashboardChart");
+    if (!box) return;
+
+    if (!Array.isArray(datos) || datos.length === 0) {
+        box.innerHTML = '<div class="venta-card">Sin datos para gráfico.</div>';
+        return;
+    }
+
+    const width = 900;
+    const height = 280;
+    const padL = 58;
+    const padR = 18;
+    const padT = 18;
+    const padB = 42;
+
+    const valores = [];
+    datos.forEach(x => {
+        valores.push(Number(x.ventaMesActual ?? x.VentaMesActual ?? 0));
+        valores.push(Number(x.ventaMesAnterior ?? x.VentaMesAnterior ?? 0));
+    });
+
+    const maxVal = Math.max(...valores, 1);
+    const chartW = width - padL - padR;
+    const chartH = height - padT - padB;
+
+    const xPos = idx => padL + (chartW * idx / Math.max(datos.length - 1, 1));
+    const yPos = val => padT + chartH - (chartH * Number(val || 0) / maxVal);
+
+    const puntosActual = datos.map((x, i) => `${xPos(i)},${yPos(x.ventaMesActual ?? x.VentaMesActual ?? 0)}`).join(" ");
+    const puntosAnterior = datos.map((x, i) => `${xPos(i)},${yPos(x.ventaMesAnterior ?? x.VentaMesAnterior ?? 0)}`).join(" ");
+
+    const ticks = [0, 0.25, 0.5, 0.75, 1].map(p => {
+        const val = maxVal * p;
+        const y = yPos(val);
+        return `
+          <line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="#e9ecef" stroke-width="1" />
+          <text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#666">${formatoCorto(val)}</text>
+        `;
+    }).join("");
+
+    const labels = datos.map((x, i) => {
+        const mes = x.mes ?? x.Mes ?? (i + 1);
+        const nombre = (x.mesNombre ?? x.MesNombre ?? nombreMes(mes)).substring(0,3);
+        const xCoord = xPos(i);
+        return `<text x="${xCoord}" y="${height - 16}" text-anchor="middle" font-size="10" fill="#555">${esc(nombre)}</text>`;
+    }).join("");
+
+    const points = datos.map((x, i) => {
+        const va = Number(x.ventaMesActual ?? x.VentaMesActual ?? 0);
+        const vy = Number(x.ventaMesAnterior ?? x.VentaMesAnterior ?? 0);
+        return `
+          <circle cx="${xPos(i)}" cy="${yPos(va)}" r="3.5" fill="#0d6efd">
+            <title>${esc(x.mesNombre ?? x.MesNombre ?? "")} actual: $${formato(va)}</title>
+          </circle>
+          <circle cx="${xPos(i)}" cy="${yPos(vy)}" r="3.5" fill="#6c757d">
+            <title>${esc(x.mesNombre ?? x.MesNombre ?? "")} anterior: $${formato(vy)}</title>
+          </circle>
+        `;
+    }).join("");
+
+    box.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución mensual de ventas">
+        <rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect>
+        ${ticks}
+        <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#adb5bd" stroke-width="1" />
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="#adb5bd" stroke-width="1" />
+        <polyline points="${puntosAnterior}" fill="none" stroke="#6c757d" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+        <polyline points="${puntosActual}" fill="none" stroke="#0d6efd" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+        ${points}
+        ${labels}
+      </svg>
+    `;
+}
+
+function formatoCorto(n){
+    const v = Number(n || 0);
+    if (v >= 1000000) return (v / 1000000).toLocaleString("es-CL", {maximumFractionDigits:0}) + "MM";
+    if (v >= 1000) return (v / 1000).toLocaleString("es-CL", {maximumFractionDigits:0}) + "K";
+    return v.toLocaleString("es-CL", {maximumFractionDigits:0});
+}
+
+function renderDashboardDivisionesVendedor(datos){
+    const box = document.getElementById("dashboardDivisionesVendedor");
+    if (!box) return;
+
+    box.innerHTML = renderTablaDashboard(
+        ["División", "Meta", "Venta", "Cumpl.", "Margen", "% Margen"],
+        datos,
+        x => [
+            x.divisionVendedor ?? x.DivisionVendedor ?? "",
+            "$" + formato(x.metaVenta ?? x.MetaVenta ?? 0),
+            "$" + formato(x.ventaReal ?? x.VentaReal ?? 0),
+            cumplimientoBadgeTexto(x.cumplimientoMeta ?? x.CumplimientoMeta ?? 0),
+            "$" + formato(x.margenValor ?? x.MargenValor ?? 0),
+            formatoPct(x.margenPct ?? x.MargenPct ?? 0)
+        ]
+    );
+}
+
+function renderDashboardDivisionesProducto(datos){
+    const box = document.getElementById("dashboardDivisionesProducto");
+    if (!box) return;
+
+    box.innerHTML = renderTablaDashboard(
+        ["División", "Meta", "Venta", "Cumpl.", "Margen", "% Margen"],
+        datos,
+        x => [
+            x.divisionNegocio ?? x.DivisionNegocio ?? "",
+            "$" + formato(x.metaVenta ?? x.MetaVenta ?? 0),
+            "$" + formato(x.ventaReal ?? x.VentaReal ?? 0),
+            cumplimientoBadgeTexto(x.cumplimientoMeta ?? x.CumplimientoMeta ?? 0),
+            "$" + formato(x.margenValor ?? x.MargenValor ?? 0),
+            formatoPct(x.margenPct ?? x.MargenPct ?? 0)
+        ]
+    );
+}
+
+function renderDashboardVendedores(datos){
+    const box = document.getElementById("dashboardVendedores");
+    if (!box) return;
+
+    const top = Array.isArray(datos) ? datos.slice(0, 20) : [];
+
+    box.innerHTML = renderTablaDashboard(
+        ["Vendedor", "División", "Meta", "Venta", "Cumpl.", "Margen", "% Margen"],
+        top,
+        x => [
+            x.slpName ?? x.SlpName ?? "",
+            x.divisionVendedor ?? x.DivisionVendedor ?? "",
+            "$" + formato(x.metaVenta ?? x.MetaVenta ?? 0),
+            "$" + formato(x.ventaReal ?? x.VentaReal ?? 0),
+            cumplimientoBadgeTexto(x.cumplimientoMeta ?? x.CumplimientoMeta ?? 0),
+            "$" + formato(x.margenValor ?? x.MargenValor ?? 0),
+            formatoPct(x.margenPct ?? x.MargenPct ?? 0)
+        ]
+    );
+}
+
+function renderTablaDashboard(headers, datos, mapRow){
+    if (!Array.isArray(datos) || datos.length === 0) {
+        return '<div class="venta-card">Sin datos.</div>';
+    }
+
+    const th = headers.map(h => `<th>${esc(h)}</th>`).join("");
+    const rows = datos.map(x => {
+        const cols = mapRow(x).map((v, idx) => {
+            const contenido = idx === 0 ? esc(v) : v;
+            return `<td>${contenido}</td>`;
+        }).join("");
+
+        return `<tr>${cols}</tr>`;
+    }).join("");
+
+    return `
+      <table class="dashboard-table">
+        <thead><tr>${th}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+}
+
 
 function esc(str){
     return (str || "")
