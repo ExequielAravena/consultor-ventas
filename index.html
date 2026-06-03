@@ -683,10 +683,9 @@ button {
   margin:0 auto 8px auto;
 }
 
-
 .dashboard-filtros {
   display:grid;
-  grid-template-columns:repeat(3, minmax(150px, 1fr));
+  grid-template-columns:repeat(3, 1fr);
   gap:8px;
   margin-top:8px;
 }
@@ -699,23 +698,15 @@ button {
   margin-top:4px;
 }
 
-.dashboard-bar-label {
-  font-size:9px;
-  fill:#555;
-}
-
-.dashboard-bar-value {
-  font-size:8px;
-  fill:#555;
+@media (max-width: 700px) {
+  .dashboard-filtros {
+    grid-template-columns:1fr;
+  }
 }
 
 @media (max-width: 700px) {
   .dashboard-grid {
     grid-template-columns:1fr 1fr;
-  }
-
-  .dashboard-filtros {
-    grid-template-columns:1fr;
   }
 
   .dashboard-kpi-value {
@@ -1008,14 +999,18 @@ button {
       <div class="kpi-header">
         <div>
           <div class="kpi-title">📊 Dashboard ADMIN</div>
-          <div class="filtro-ayuda">Resumen comercial consolidado para ADMIN y SUPERADMIN.</div>
+          <div class="filtro-ayuda">Venta facturada separada de guías sin facturar.</div>
         </div>
-        <select id="dashboardPeriodo" class="kpi-periodo-select" onchange="cargarDashboard(); guardarFiltros();">
-          <option value="">Período actual</option>
-        </select>
       </div>
 
       <div class="dashboard-filtros">
+        <div>
+          <label>Período</label>
+          <select id="dashboardPeriodo" onchange="cargarDashboard(); guardarFiltros();">
+            <option value="">Período actual</option>
+          </select>
+        </div>
+
         <div>
           <label>Div. vendedor</label>
           <select id="dashboardDivisionVendedor" onchange="cargarDashboard(); guardarFiltros();">
@@ -1037,11 +1032,10 @@ button {
             <option value="DIVTI">DIVTI</option>
           </select>
         </div>
+      </div>
 
-        <div>
-          <label>Acción</label>
-          <button onclick="cargarDashboard()">Actualizar dashboard</button>
-        </div>
+      <div class="botones">
+        <button onclick="cargarDashboard()">Actualizar dashboard</button>
       </div>
 
       <div id="dashboardEstado" class="status dashboard-status">Seleccione período y actualice dashboard.</div>
@@ -1049,7 +1043,7 @@ button {
 
     <div id="dashboardKpis" class="dashboard-grid"></div>
 
-    <div class="dashboard-section-title">Evolución mensual por mes-año</div>
+    <div class="dashboard-section-title">Evolución mensual año actual vs año anterior</div>
     <div class="dashboard-chart">
       <div id="dashboardChart"></div>
       <div class="dashboard-legend">
@@ -1132,7 +1126,7 @@ window.addEventListener("load", function(){
         }
     });
 
-    ["pedidoGuiaBuscar", "pedidoGuiaCliente", "pedidoGuiaProducto", "dashboardPeriodo"].forEach(id => {
+    ["pedidoGuiaBuscar", "pedidoGuiaCliente", "pedidoGuiaProducto", "dashboardPeriodo", "dashboardDivisionVendedor", "dashboardDivisionProducto"].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener("keydown", function(e) {
@@ -2626,16 +2620,6 @@ function obtenerPeriodoDashboard(){
     };
 }
 
-function obtenerFiltrosDashboard(){
-    const divisionVendedor = (document.getElementById("dashboardDivisionVendedor")?.value || "TODAS").toUpperCase();
-    const divisionProducto = (document.getElementById("dashboardDivisionProducto")?.value || "TODAS").toUpperCase();
-
-    return {
-        divisionVendedor: divisionVendedor || "TODAS",
-        divisionProducto: divisionProducto || "TODAS"
-    };
-}
-
 function nombreMes(mes){
     const nombres = [
         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -2887,25 +2871,15 @@ async function cargarDashboard(){
     }
 
     const periodo = obtenerPeriodoDashboard();
-    const filtrosDashboard = obtenerFiltrosDashboard();
+    const divisionVendedor = document.getElementById("dashboardDivisionVendedor")?.value || "TODAS";
+    const divisionProducto = document.getElementById("dashboardDivisionProducto")?.value || "TODAS";
 
     if (estado) estado.textContent = "Cargando dashboard...";
 
     try {
-        const filtroUrl =
-            `&divisionVendedor=${encodeURIComponent(filtrosDashboard.divisionVendedor)}` +
-            `&divisionProducto=${encodeURIComponent(filtrosDashboard.divisionProducto)}`;
-
-        const paramsMes =
-            `token=${encodeURIComponent(sesion.token)}` +
-            `&ano=${encodeURIComponent(periodo.ano)}` +
-            `&mes=${encodeURIComponent(periodo.mes)}` +
-            filtroUrl;
-
-        const paramsAno =
-            `token=${encodeURIComponent(sesion.token)}` +
-            `&ano=${encodeURIComponent(periodo.ano)}` +
-            filtroUrl;
+        const filtroDash = `&divisionVendedor=${encodeURIComponent(divisionVendedor)}&divisionProducto=${encodeURIComponent(divisionProducto)}`;
+        const paramsMes = `token=${encodeURIComponent(sesion.token)}&ano=${encodeURIComponent(periodo.ano)}&mes=${encodeURIComponent(periodo.mes)}${filtroDash}`;
+        const paramsAno = `token=${encodeURIComponent(sesion.token)}&ano=${encodeURIComponent(periodo.ano)}${filtroDash}`;
 
         const [
             kpisResp,
@@ -2943,8 +2917,8 @@ async function cargarDashboard(){
             estado.textContent =
                 "Dashboard actualizado: " +
                 nombreMes(periodo.mes) + " " + periodo.ano +
-                ". Div. vendedor: " + filtrosDashboard.divisionVendedor +
-                ". Div. producto: " + filtrosDashboard.divisionProducto +
+                ". Div. vendedor: " + divisionVendedor +
+                ". Div. producto: " + divisionProducto +
                 ". Vendedores: " + (Array.isArray(vendedores) ? vendedores.length : 0).toLocaleString("es-CL") + ".";
         }
 
@@ -2960,6 +2934,8 @@ function renderDashboardKpis(k){
     if (!box) return;
 
     const venta = k.ventaRealMes ?? k.VentaRealMes ?? 0;
+    const guias = k.guiasSinFacturar ?? k.GuiasSinFacturar ?? 0;
+    const totalComercial = k.totalComercial ?? k.TotalComercial ?? (Number(venta || 0) + Number(guias || 0));
     const metaVend = k.metaVendedores ?? k.MetaVendedores ?? 0;
     const cumpVend = k.cumplimientoMetaVendedores ?? k.CumplimientoMetaVendedores ?? 0;
     const margen = k.margenMes ?? k.MargenMes ?? 0;
@@ -2970,14 +2946,16 @@ function renderDashboardKpis(k){
     const cumpDiv = k.cumplimientoMetaDivision ?? k.CumplimientoMetaDivision ?? 0;
 
     box.innerHTML = [
-        cardDashboardKpi("Venta real mes", "$" + formato(venta), "Facturas, NC y guías abiertas"),
+        cardDashboardKpi("Venta facturada mes", "$" + formato(venta), "Facturas y NC; excluye guías"),
+        cardDashboardKpi("Guías sin facturar", "$" + formato(guias), "KPI separado"),
+        cardDashboardKpi("Total comercial", "$" + formato(totalComercial), "Venta facturada + guías"),
         cardDashboardKpi("Meta vendedores", "$" + formato(metaVend), cumplimientoBadgeTexto(cumpVend)),
-        cardDashboardKpi("Cumplimiento vendedores", formatoPct(cumpVend), "Venta / meta vendedores"),
-        cardDashboardKpi("Margen mes", "$" + formato(margen), formatoPct(margenPct) + " margen"),
-        cardDashboardKpi("Venta LY", "$" + formato(ventaLY), "Mismo mes año anterior"),
-        cardDashboardKpi("Variación LY", formatoPct(varLY), "Actual vs LY"),
+        cardDashboardKpi("Cumplimiento vendedores", formatoPct(cumpVend), "Venta facturada / meta"),
+        cardDashboardKpi("Margen mes", "$" + formato(margen), formatoPct(margenPct) + " margen sobre venta facturada"),
+        cardDashboardKpi("Venta LY", "$" + formato(ventaLY), "Mismo mes año anterior, sin guías"),
+        cardDashboardKpi("Variación LY", formatoPct(varLY), "Venta facturada actual vs LY"),
         cardDashboardKpi("Meta división producto", "$" + formato(metaDiv), cumplimientoBadgeTexto(cumpDiv)),
-        cardDashboardKpi("Cumplimiento división", formatoPct(cumpDiv), "Venta / meta división")
+        cardDashboardKpi("Cumplimiento división", formatoPct(cumpDiv), "Venta facturada / meta división")
     ].join("");
 }
 
@@ -3018,16 +2996,12 @@ function renderDashboardEvolucion(datos){
         return;
     }
 
-    const periodo = obtenerPeriodoDashboard();
-    const anoActual = periodo.ano;
-    const anoAnterior = periodo.ano - 1;
-
-    const width = 960;
-    const height = 320;
+    const width = 900;
+    const height = 300;
     const padL = 62;
     const padR = 18;
-    const padT = 20;
-    const padB = 58;
+    const padT = 18;
+    const padB = 54;
 
     const valores = [];
     datos.forEach(x => {
@@ -3035,20 +3009,16 @@ function renderDashboardEvolucion(datos){
         valores.push(Number(x.ventaMesAnterior ?? x.VentaMesAnterior ?? 0));
     });
 
-    const maxValBase = Math.max(...valores, 1);
-    const maxVal = maxValBase * 1.12;
+    const maxVal = Math.max(...valores, 1);
     const chartW = width - padL - padR;
     const chartH = height - padT - padB;
     const baseY = height - padB;
-
     const yPos = val => padT + chartH - (chartH * Number(val || 0) / maxVal);
-
     const grupoW = chartW / Math.max(datos.length, 1);
-    const barGap = Math.max(3, grupoW * 0.06);
-    const barW = Math.max(8, (grupoW - barGap * 4) / 2);
+    const barW = Math.min(22, grupoW * 0.32);
 
     const ticks = [0, 0.25, 0.5, 0.75, 1].map(p => {
-        const val = maxValBase * p;
+        const val = maxVal * p;
         const y = yPos(val);
         return `
           <line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="#e9ecef" stroke-width="1" />
@@ -3059,36 +3029,31 @@ function renderDashboardEvolucion(datos){
     const barras = datos.map((x, i) => {
         const mes = x.mes ?? x.Mes ?? (i + 1);
         const nombre = (x.mesNombre ?? x.MesNombre ?? nombreMes(mes)).substring(0,3);
-
-        const actual = Number(x.ventaMesActual ?? x.VentaMesActual ?? 0);
-        const anterior = Number(x.ventaMesAnterior ?? x.VentaMesAnterior ?? 0);
-
-        const groupX = padL + (grupoW * i);
-        const xAnterior = groupX + barGap;
-        const xActual = xAnterior + barW + barGap;
-
-        const yAnterior = yPos(anterior);
-        const hAnterior = Math.max(0, baseY - yAnterior);
-
-        const yActual = yPos(actual);
-        const hActual = Math.max(0, baseY - yActual);
-
-        const labelX = groupX + grupoW / 2;
+        const va = Number(x.ventaMesActual ?? x.VentaMesActual ?? 0);
+        const vy = Number(x.ventaMesAnterior ?? x.VentaMesAnterior ?? 0);
+        const centro = padL + grupoW * i + grupoW / 2;
+        const xAnt = centro - barW - 2;
+        const xAct = centro + 2;
+        const yAnt = yPos(vy);
+        const yAct = yPos(va);
+        const hAnt = baseY - yAnt;
+        const hAct = baseY - yAct;
+        const periodoActual = nombreMes(mes) + " " + (obtenerPeriodoDashboard().ano || "");
+        const periodoAnterior = nombreMes(mes) + " " + ((obtenerPeriodoDashboard().ano || 0) - 1);
 
         return `
-          <rect x="${xAnterior}" y="${yAnterior}" width="${barW}" height="${hAnterior}" rx="3" fill="#6c757d">
-            <title>${esc(nombre)} ${anoAnterior}: $${formato(anterior)}</title>
+          <rect x="${xAnt}" y="${yAnt}" width="${barW}" height="${hAnt}" rx="3" fill="#6c757d">
+            <title>${esc(periodoAnterior)}: $${formato(vy)}</title>
           </rect>
-          <rect x="${xActual}" y="${yActual}" width="${barW}" height="${hActual}" rx="3" fill="#0d6efd">
-            <title>${esc(nombre)} ${anoActual}: $${formato(actual)}</title>
+          <rect x="${xAct}" y="${yAct}" width="${barW}" height="${hAct}" rx="3" fill="#0d6efd">
+            <title>${esc(periodoActual)}: $${formato(va)}</title>
           </rect>
-          <text x="${labelX}" y="${height - 34}" text-anchor="middle" class="dashboard-bar-label">${esc(nombre)}</text>
-          <text x="${labelX}" y="${height - 20}" text-anchor="middle" class="dashboard-bar-label">${anoActual}</text>
+          <text x="${centro}" y="${height - 26}" text-anchor="middle" font-size="10" fill="#555">${esc(nombre)}</text>
         `;
     }).join("");
 
     box.innerHTML = `
-      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución mensual de ventas por mes-año">
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución mensual de ventas por barras">
         <rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect>
         ${ticks}
         <line x1="${padL}" y1="${baseY}" x2="${width - padR}" y2="${baseY}" stroke="#adb5bd" stroke-width="1" />
@@ -3110,7 +3075,7 @@ function renderDashboardDivisionesVendedor(datos){
     if (!box) return;
 
     box.innerHTML = renderTablaDashboard(
-        ["División", "Meta", "Venta", "Cumpl.", "Margen", "% Margen"],
+        ["División", "Meta", "Venta fact.", "Cumpl.", "Margen", "% Margen"],
         datos,
         x => [
             x.divisionVendedor ?? x.DivisionVendedor ?? "",
@@ -3128,7 +3093,7 @@ function renderDashboardDivisionesProducto(datos){
     if (!box) return;
 
     box.innerHTML = renderTablaDashboard(
-        ["División", "Meta", "Venta", "Cumpl.", "Margen", "% Margen"],
+        ["División", "Meta", "Venta fact.", "Cumpl.", "Margen", "% Margen"],
         datos,
         x => [
             x.divisionNegocio ?? x.DivisionNegocio ?? "",
@@ -3148,7 +3113,7 @@ function renderDashboardVendedores(datos){
     const top = Array.isArray(datos) ? datos.slice(0, 20) : [];
 
     box.innerHTML = renderTablaDashboard(
-        ["Vendedor", "División", "Meta", "Venta", "Cumpl.", "Margen", "% Margen"],
+        ["Vendedor", "División", "Meta", "Venta fact.", "Cumpl.", "Margen", "% Margen"],
         top,
         x => [
             x.slpName ?? x.SlpName ?? "",
