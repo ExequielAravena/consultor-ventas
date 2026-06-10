@@ -2268,10 +2268,17 @@ if ((rol === "ADMIN" || rol === "SUPERADMIN") && !slpCodeConsulta) {
     return;
 }
 
-    const desde = document.getElementById('fechaDesde').value || "2024-07-01";
-    const hasta = document.getElementById('fechaHasta').value || hoyISO();
+    // La sincronización siempre debe traer la base completa acordada:
+    // desde 2024-07-01 hasta el día actual, independiente de los filtros de pantalla.
+    const desde = "2024-07-01";
+    const hasta = hoyISO();
 
-    estado.textContent = "Sincronizando ventas desde SAP...";
+    const fechaDesdeEl = document.getElementById('fechaDesde');
+    const fechaHastaEl = document.getElementById('fechaHasta');
+    if (fechaDesdeEl) fechaDesdeEl.value = desde;
+    if (fechaHastaEl) fechaHastaEl.value = hasta;
+
+    estado.textContent = "Sincronizando ventas desde SAP desde " + desde + " hasta " + hasta + "...";
 
     try {
         let url =
@@ -2491,7 +2498,11 @@ function cargarFiltros(){
 }
 
 function hoyISO(){
-    return new Date().toISOString().substring(0,10);
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dd = String(hoy.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
 }
 
 function aplicarFechasInicialesSiCorresponde(){
@@ -2514,22 +2525,15 @@ function aplicarFechasInicialesSiCorresponde(){
 }
 
 function aplicarFechasBase(){
-    if (!data || data.length === 0) return;
+    const desdeEl = document.getElementById('fechaDesde');
+    const hastaEl = document.getElementById('fechaHasta');
 
-    const fechas = data
-        .map(x =>
-            (x.Fecha || x.fecha || '')
-            .toString()
-            .substring(0,10)
-        )
-        .filter(Boolean)
-        .sort();
+    if (!desdeEl || !hastaEl) return;
 
-    if (fechas.length > 0) {
-        document.getElementById('fechaDesde').value = fechas[0];
-        document.getElementById('fechaHasta').value =
-            fechas[fechas.length - 1];
-    }
+    // Los filtros principales deben quedar siempre en el rango completo de trabajo,
+    // no en la primera/última fecha encontrada en la base sincronizada.
+    desdeEl.value = "2024-07-01";
+    hastaEl.value = hoyISO();
 }
 
 function normalizar(txt){
