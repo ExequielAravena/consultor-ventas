@@ -1074,28 +1074,28 @@ const STORAGE_FILTERS = "ventas_offline_filters_v1";
 const STORAGE_LOGIN = "ventas_offline_login_v1";
 const FECHA_INICIO_SYNC = FECHA_INICIO_SYNC;
 
-const API_BASE =
+var API_BASE =
     (location.hostname === "localhost" || location.hostname === "127.0.0.1")
     ? "http://localhost:5178"
     : "https://api.cotaco.cl";
 
-const API_LOGIN = API_BASE + "/api/login";
-const API_SYNC = API_BASE + "/api/ventas-historicas-sync";
-const API_CAMBIAR_PASSWORD = API_BASE + "/api/cambiar-password";
-const API_ADMIN_RESET_PASSWORD = API_BASE + "/api/admin/reset-password";
-const API_VENDEDORES = API_BASE + "/api/vendedores";
-const API_STOCK = API_BASE + "/api/bot/stock";
-const API_STOCK_SYNC = API_BASE + "/api/stock-sync";
-const API_PEDIDOS = API_BASE + "/api/pedidos-estado";
-const API_PEDIDOS_GUIAS = API_BASE + "/api/pedidos-con-guias";
-const API_RESUMEN_MES = API_BASE + "/api/bot/resumen-mes";
-const API_PEDIDOS_DIVISIONES = API_BASE + "/api/pedidos/divisiones-vendedor";
-const API_PEDIDOS_CONDICIONES = API_BASE + "/api/pedidos/condiciones-despacho";
-const API_DASHBOARD_KPIS = API_BASE + "/api/dashboard/kpis";
-const API_DASHBOARD_DIVISIONES_VENDEDOR = API_BASE + "/api/dashboard/divisiones-vendedor";
-const API_DASHBOARD_VENDEDORES = API_BASE + "/api/dashboard/vendedores";
-const API_DASHBOARD_DIVISIONES_PRODUCTO = API_BASE + "/api/dashboard/divisiones-producto";
-const API_DASHBOARD_EVOLUCION_MENSUAL = API_BASE + "/api/dashboard/evolucion-mensual";
+var API_LOGIN = API_BASE + "/api/login";
+var API_SYNC = API_BASE + "/api/ventas-historicas-sync";
+var API_CAMBIAR_PASSWORD = API_BASE + "/api/cambiar-password";
+var API_ADMIN_RESET_PASSWORD = API_BASE + "/api/admin/reset-password";
+var API_VENDEDORES = API_BASE + "/api/vendedores";
+var API_STOCK = API_BASE + "/api/bot/stock";
+var API_STOCK_SYNC = API_BASE + "/api/stock-sync";
+var API_PEDIDOS = API_BASE + "/api/pedidos-estado";
+var API_PEDIDOS_GUIAS = API_BASE + "/api/pedidos-con-guias";
+var API_RESUMEN_MES = API_BASE + "/api/bot/resumen-mes";
+var API_PEDIDOS_DIVISIONES = API_BASE + "/api/pedidos/divisiones-vendedor";
+var API_PEDIDOS_CONDICIONES = API_BASE + "/api/pedidos/condiciones-despacho";
+var API_DASHBOARD_KPIS = API_BASE + "/api/dashboard/kpis";
+var API_DASHBOARD_DIVISIONES_VENDEDOR = API_BASE + "/api/dashboard/divisiones-vendedor";
+var API_DASHBOARD_VENDEDORES = API_BASE + "/api/dashboard/vendedores";
+var API_DASHBOARD_DIVISIONES_PRODUCTO = API_BASE + "/api/dashboard/divisiones-producto";
+var API_DASHBOARD_EVOLUCION_MENSUAL = API_BASE + "/api/dashboard/evolucion-mensual";
 
 window.addEventListener("load", function(){
     cargarPeriodosResumen();
