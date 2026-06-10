@@ -1072,6 +1072,7 @@ const STORAGE_STOCK_DATA = "stock_offline_data_v1";
 const STORAGE_STOCK_FECHA = "stock_offline_fecha_v1";
 const STORAGE_FILTERS = "ventas_offline_filters_v1";
 const STORAGE_LOGIN = "ventas_offline_login_v1";
+const FECHA_INICIO_SYNC = FECHA_INICIO_SYNC;
 
 const API_BASE =
     (location.hostname === "localhost" || location.hostname === "127.0.0.1")
@@ -2270,7 +2271,7 @@ if ((rol === "ADMIN" || rol === "SUPERADMIN") && !slpCodeConsulta) {
 
     // La sincronización siempre debe traer la base completa acordada:
     // desde 2024-07-01 hasta el día actual, independiente de los filtros de pantalla.
-    const desde = "2024-07-01";
+    const desde = FECHA_INICIO_SYNC;
     const hasta = hoyISO();
 
     const fechaDesdeEl = document.getElementById('fechaDesde');
@@ -2386,14 +2387,18 @@ function borrarBase(){
 
     data = [];
 
-    document.getElementById('fechaDesde').value = '';
-    document.getElementById('fechaHasta').value = '';
+    aplicarFechasBase();
+
     document.getElementById('cliente').value = '';
     document.getElementById('producto').value = '';
     document.getElementById('folio').value = '';
-  document.getElementById('slpCodeConsulta').value = '';
 
-    document.getElementById("estado").textContent = "Base local de ventas y stock eliminada.";
+    const combo = document.getElementById('slpCodeConsulta');
+    if (combo) combo.value = '';
+
+    const estado = document.getElementById("estado");
+    if (estado) estado.textContent = "Base local de ventas y stock eliminada. Filtros limpiados.";
+
     render([], 0, 0);
     cargarResumenMes();
 }
@@ -2438,10 +2443,12 @@ function cargarFiltros(){
     filtros.slpCodeConsulta || '';
 
         document.getElementById('fechaDesde').value =
-            filtros.fechaDesde || '';
+            filtros.fechaDesde || FECHA_INICIO_SYNC;
 
+        // Si la fecha guardada quedó atrasada, se actualiza al día actual.
+        const fechaHastaGuardada = filtros.fechaHasta || '';
         document.getElementById('fechaHasta').value =
-            filtros.fechaHasta || '';
+            (!fechaHastaGuardada || fechaHastaGuardada < hoyISO()) ? hoyISO() : fechaHastaGuardada;
 
         document.getElementById('cliente').value =
             filtros.cliente || '';
@@ -2511,15 +2518,11 @@ function aplicarFechasInicialesSiCorresponde(){
 
     if (!desdeEl || !hastaEl) return;
 
-    if (data && data.length > 0) {
-        if (!desdeEl.value || !hastaEl.value) {
-            aplicarFechasBase();
-        }
-        return;
-    }
+    if (!desdeEl.value) desdeEl.value = FECHA_INICIO_SYNC;
 
-    if (!desdeEl.value) desdeEl.value = "2024-07-01";
-    if (!hastaEl.value) hastaEl.value = hoyISO();
+    // Fecha hasta debe quedar siempre al día actual cuando la pantalla se inicia.
+    // Evita que quede congelada con la última fecha guardada en filtros/localStorage.
+    hastaEl.value = hoyISO();
 
     guardarFiltros();
 }
@@ -2530,9 +2533,8 @@ function aplicarFechasBase(){
 
     if (!desdeEl || !hastaEl) return;
 
-    // Los filtros principales deben quedar siempre en el rango completo de trabajo,
-    // no en la primera/última fecha encontrada en la base sincronizada.
-    desdeEl.value = "2024-07-01";
+    // Rango completo de trabajo acordado para ventas offline.
+    desdeEl.value = FECHA_INICIO_SYNC;
     hastaEl.value = hoyISO();
 }
 
@@ -2782,9 +2784,15 @@ function limpiar(){
     document.getElementById('cliente').value = '';
     document.getElementById('producto').value = '';
     document.getElementById('folio').value = '';
+
+    // Limpiar también reinicia las fechas al rango completo.
     aplicarFechasBase();
+
+    // Persistir la limpieza para que no vuelvan filtros antiguos desde localStorage.
     guardarFiltros();
+
     buscar();
+    cargarResumenMes();
 }
 
 function calcularTotal(lista){
