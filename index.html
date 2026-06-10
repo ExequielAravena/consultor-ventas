@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Consultor Offline Ventas COTACO</title>
-<!-- build: fix-fecha-inicio-sync-20260610 -->
+<!-- build: fix-api-login-cache-20260610-2 -->
 <link rel="manifest" href="/consultor-ventas/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="/consultor-ventas/icon-192.png">
 <link rel="apple-touch-icon" href="/consultor-ventas/icon-192.png">
@@ -1097,6 +1097,8 @@ const API_DASHBOARD_DIVISIONES_VENDEDOR = API_BASE + "/api/dashboard/divisiones-
 const API_DASHBOARD_VENDEDORES = API_BASE + "/api/dashboard/vendedores";
 const API_DASHBOARD_DIVISIONES_PRODUCTO = API_BASE + "/api/dashboard/divisiones-producto";
 const API_DASHBOARD_EVOLUCION_MENSUAL = API_BASE + "/api/dashboard/evolucion-mensual";
+
+console.log("Build index:", "fix-api-login-cache-20260610-2", "API_LOGIN:", API_LOGIN);
 
 window.addEventListener("load", function(){
     cargarPeriodosResumen();
@@ -3211,6 +3213,7 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/consultor-ventas/sw.js")
       .then(function (registration) {
         console.log("Service Worker OK:", registration.scope);
+        registration.update();
       })
       .catch(function (error) {
         console.error("Error Service Worker:", error);
