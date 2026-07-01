@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Consultor Offline Ventas COTACO</title>
-<!-- build: fix-api-login-cache-20260610-2 -->
+<!-- build: dashboard-acumulado-ytd-20260610-3 -->
 <link rel="manifest" href="/consultor-ventas/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="/consultor-ventas/icon-192.png">
 <link rel="apple-touch-icon" href="/consultor-ventas/icon-192.png">
@@ -1098,7 +1098,7 @@ const API_DASHBOARD_VENDEDORES = API_BASE + "/api/dashboard/vendedores";
 const API_DASHBOARD_DIVISIONES_PRODUCTO = API_BASE + "/api/dashboard/divisiones-producto";
 const API_DASHBOARD_EVOLUCION_MENSUAL = API_BASE + "/api/dashboard/evolucion-mensual";
 
-console.log("Build index:", "fix-api-login-cache-20260610-2", "API_LOGIN:", API_LOGIN);
+console.log("Build index:", "dashboard-acumulado-ytd-20260610-3", "API_LOGIN:", API_LOGIN);
 
 window.addEventListener("load", function(){
     cargarPeriodosResumen();
@@ -2959,6 +2959,12 @@ function renderDashboardKpis(k){
     const varLY = k.variacionLY ?? k.VariacionLY ?? 0;
     const metaDiv = k.metaDivisionProducto ?? k.MetaDivisionProducto ?? 0;
     const cumpDiv = k.cumplimientoMetaDivision ?? k.CumplimientoMetaDivision ?? 0;
+    const ventaAcumActual = k.ventaAcumuladaActual ?? k.VentaAcumuladaActual ?? 0;
+    const ventaAcumAnterior = k.ventaAcumuladaAnterior ?? k.VentaAcumuladaAnterior ?? 0;
+    const varAcum = k.variacionAcumuladaPct ?? k.VariacionAcumuladaPct ?? 0;
+    const periodo = obtenerPeriodoDashboard();
+    const rangoActual = "Enero a " + nombreMes(periodo.mes) + " " + periodo.ano + ", sin guías";
+    const rangoAnterior = "Enero a " + nombreMes(periodo.mes) + " " + (periodo.ano - 1) + ", sin guías";
 
     box.innerHTML = [
         cardDashboardKpi("Venta facturada mes", "$" + formato(venta), "Facturas y NC; excluye guías"),
@@ -2969,6 +2975,9 @@ function renderDashboardKpis(k){
         cardDashboardKpi("Margen mes", "$" + formato(margen), formatoPct(margenPct) + " margen sobre venta facturada"),
         cardDashboardKpi("Venta LY", "$" + formato(ventaLY), "Mismo mes año anterior, sin guías"),
         cardDashboardKpi("Variación LY", formatoPct(varLY), "Venta facturada actual vs LY"),
+        cardDashboardKpi("Venta acum. año actual", "$" + formato(ventaAcumActual), rangoActual),
+        cardDashboardKpi("Venta acum. año anterior", "$" + formato(ventaAcumAnterior), rangoAnterior),
+        cardDashboardKpi("Variación acumulada", formatoPct(varAcum), "Acumulado actual vs acumulado LY"),
         cardDashboardKpi("Meta división producto", "$" + formato(metaDiv), cumplimientoBadgeTexto(cumpDiv)),
         cardDashboardKpi("Cumplimiento división", formatoPct(cumpDiv), "Venta facturada / meta división")
     ].join("");
